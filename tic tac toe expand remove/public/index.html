@@ -1,0 +1,2490 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Tic Tac Toe — 2 to 5 Players & TAT Matchmaking</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            margin: 20px 0 50px 0;
+        }
+        h1 { margin: 6px 0 10px 0; }
+
+        /* Top Mode & Matchmaking Bar */
+        .top-nav-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            background: #34495e;
+            padding: 10px 18px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            margin-bottom: 14px;
+            max-width: 1100px;
+        }
+        .nav-tab-btn {
+            height: 40px;
+            padding: 8px 16px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 6px;
+            border: 2px solid transparent;
+            background: #2c3e50;
+            color: #ecf0f1;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .nav-tab-btn:hover {
+            background: #3d566e;
+        }
+        .nav-tab-btn.active {
+            background: #e67e22;
+            color: #fff;
+            border-color: #f39c12;
+        }
+        .identity-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #2c3e50;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .identity-badge select {
+            height: 32px;
+            font-size: 13px;
+            padding: 0 8px;
+            background: #34495e;
+            color: #fff;
+            border: 1px solid #7f8c8d;
+            border-radius: 4px;
+        }
+
+        /* Lobby View (TAT / TAT 2 Style) */
+        .lobby-container {
+            display: none;
+            width: 95%;
+            max-width: 1120px;
+            margin-bottom: 24px;
+        }
+        .lobby-container.active {
+            display: block;
+        }
+        .lobby-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+            gap: 18px;
+        }
+        .lobby-card {
+            background: #34495e;
+            padding: 18px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .lobby-card h2 {
+            margin: 0;
+            font-size: 19px;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+            padding-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .lobby-input {
+            height: 38px;
+            padding: 0 10px;
+            border-radius: 6px;
+            border: 1px solid #7f8c8d;
+            background: #2c3e50;
+            color: #fff;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .lobby-btn {
+            height: 38px;
+            padding: 6px 14px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            color: #fff;
+            background: #27ae60;
+            transition: background 0.2s;
+        }
+        .lobby-btn:hover { background: #1e8449; }
+        .lobby-btn.secondary { background: #2980b9; }
+        .lobby-btn.secondary:hover { background: #1f618d; }
+        .lobby-btn.warning { background: #d35400; }
+        .lobby-btn.warning:hover { background: #a04000; }
+        .lobby-btn.danger { background: #c0392b; }
+        .lobby-btn.danger:hover { background: #922b21; }
+        .lobby-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 280px;
+            overflow-y: auto;
+        }
+        .lobby-item {
+            background: #2c3e50;
+            padding: 10px 12px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+            font-size: 14px;
+        }
+        .lobby-item.highlight-me {
+            border: 1px solid #f1c40f;
+        }
+        .badge-pill {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: bold;
+            background: rgba(255,255,255,0.15);
+        }
+
+        /* Game View */
+        .game-view-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        .game-view-container.hidden {
+            display: none;
+        }
+
+        .info {
+            margin-bottom: 14px;
+            font-size: 24px;
+            font-weight: bold;
+            min-height: 30px;
+            text-align: center;
+        }
+        .timers {
+            display: flex;
+            gap: 22px;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 14px;
+            background: #34495e;
+            padding: 10px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .timer-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.2);
+            border: 2px solid transparent;
+        }
+        .timer-item.active-turn {
+            border-color: currentColor;
+            background: rgba(255,255,255,0.08);
+        }
+        .timer-item.eliminated {
+            opacity: 0.4;
+            text-decoration: line-through;
+        }
+        .board {
+            display: grid;
+            gap: 10px;
+            background: #34495e;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            width: 420px;
+            height: 420px;
+            box-sizing: border-box;
+            flex-shrink: 0;
+        }
+        .cell {
+            background: #ecf0f1;
+            color: #2c3e50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 5px;
+            user-select: none;
+            transition: background 0.2s;
+            min-width: 0;
+            min-height: 0;
+            overflow: hidden;
+            line-height: 1;
+            position: relative;
+        }
+        .cell:hover {
+            background: #bdc3c7;
+        }
+        .cell svg.ps-shape {
+            width: 68%;
+            height: 68%;
+            display: block;
+            pointer-events: none;
+        }
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 1100px;
+        }
+        button, select, input[type=number] {
+            padding: 10px 12px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background 0.2s;
+            height: 46px;
+            box-sizing: border-box;
+        }
+        button:hover, select:hover {
+            background-color: #c0392b;
+        }
+        .toggle-btn {
+            background-color: #7f8c8d;
+        }
+        .toggle-btn:hover {
+            background-color: #95a5a6;
+        }
+        .settings-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #34495e;
+            padding: 10px;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        .settings-box label {
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        .flex-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        select, input[type=number] {
+            background-color: #2c3e50;
+            border: 2px solid #34495e;
+            padding: 0 8px;
+        }
+        input[type=number] {
+            width: 52px;
+        }
+        .board.remove-mode .cell.removable { cursor: crosshair; }
+        .board.remove-mode .cell.removable:hover { background: #f5b7b1; }
+        .board.remove-mode .cell:not(.removable) { cursor: not-allowed; }
+        .history-btn {
+            background: transparent;
+            border: 1px solid #9ca3af;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            height: auto;
+            transition: all 0.2s;
+        }
+        .history-btn:hover:not(:disabled) {
+            background: rgba(255,255,255,0.1);
+            border-color: white;
+        }
+        .history-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .game-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            flex-wrap: nowrap;
+            max-width: 1280px;
+        }
+        @media (max-width: 900px) {
+            .game-area {
+                flex-wrap: wrap;
+            }
+        }
+        .side-panels-col {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            justify-content: center;
+        }
+        .extra-panels-row {
+            display: none;
+        }
+        .player-panel {
+            background: #34495e;
+            padding: 14px 16px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            min-width: 185px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            border: 2px solid transparent;
+            transition: border-color 0.2s, transform 0.2s, opacity 0.2s, padding 0.2s;
+            box-sizing: border-box;
+        }
+        .abilities-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* Compact sizing when 3 or 4 players are playing (up to 2 panels per side) */
+        .game-area.players-3 .side-panels-col,
+        .game-area.players-4 .side-panels-col {
+            gap: 10px;
+        }
+        .game-area.players-3 .player-panel,
+        .game-area.players-4 .player-panel {
+            padding: 9px 11px;
+            gap: 6px;
+            width: 215px;
+            min-width: 215px;
+        }
+        .game-area.players-3 .player-panel-header,
+        .game-area.players-4 .player-panel-header {
+            padding-bottom: 4px;
+        }
+        .game-area.players-3 .player-panel-title,
+        .game-area.players-4 .player-panel-title {
+            font-size: 14.5px;
+        }
+        .game-area.players-3 .player-type-btn,
+        .game-area.players-4 .player-type-btn {
+            height: 22px;
+            padding: 1px 7px;
+            font-size: 11px;
+        }
+        .game-area.players-3 .abilities-grid,
+        .game-area.players-4 .abilities-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+        }
+        .game-area.players-3 .ability-row,
+        .game-area.players-4 .ability-row {
+            padding: 5px 7px;
+            font-size: 11.5px;
+            gap: 4px;
+        }
+        .game-area.players-3 .ability-count,
+        .game-area.players-4 .ability-count {
+            padding: 1px 6px;
+            font-size: 11.5px;
+        }
+        .game-area.players-3 .match-actions,
+        .game-area.players-4 .match-actions {
+            padding-top: 4px;
+            margin-top: 0;
+        }
+        .game-area.players-3 .match-action-btn,
+        .game-area.players-4 .match-action-btn {
+            height: 26px;
+            font-size: 11px;
+            padding: 2px 5px;
+        }
+
+        /* Extra-compact sizing when 5 players are playing (3 panels on left, 2 on right) */
+        .game-area.players-5 .side-panels-col {
+            gap: 7px;
+        }
+        .game-area.players-5 .player-panel {
+            padding: 6px 9px;
+            gap: 4px;
+            width: 215px;
+            min-width: 215px;
+            border-radius: 8px;
+        }
+        .game-area.players-5 .player-panel-header {
+            padding-bottom: 3px;
+        }
+        .game-area.players-5 .player-panel-title {
+            font-size: 13px;
+        }
+        .game-area.players-5 .player-type-btn {
+            height: 20px;
+            padding: 1px 6px;
+            font-size: 10px;
+        }
+        .game-area.players-5 .abilities-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+        }
+        .game-area.players-5 .ability-row {
+            padding: 3px 6px;
+            font-size: 11px;
+            gap: 4px;
+            border-radius: 5px;
+        }
+        .game-area.players-5 .ability-count {
+            padding: 1px 5px;
+            font-size: 11px;
+        }
+        .game-area.players-5 .match-actions {
+            padding-top: 3px;
+            margin-top: 0;
+            gap: 4px;
+        }
+        .game-area.players-5 .match-action-btn {
+            height: 22px;
+            font-size: 10.5px;
+            padding: 1px 4px;
+        }
+        .game-area.players-5 .reduce-prompt,
+        .game-area.players-5 .tie-prompt {
+            padding: 4px 6px;
+            gap: 3px;
+        }
+        .game-area.players-5 .reduce-agree-btn,
+        .game-area.players-5 .reduce-decline-btn,
+        .game-area.players-5 .tie-accept-btn,
+        .game-area.players-5 .tie-decline-btn {
+            height: 22px;
+            font-size: 10.5px;
+            padding: 1px 4px;
+        }
+        .player-panel.eliminated-panel {
+            opacity: 0.5;
+        }
+        .player-panel.active-X { border-color: #e74c3c; box-shadow: 0 0 14px rgba(231, 76, 60, 0.35); }
+        .player-panel.active-O { border-color: #3498db; box-shadow: 0 0 14px rgba(52, 152, 219, 0.35); }
+        .player-panel.active-T { border-color: #2ecc71; box-shadow: 0 0 14px rgba(46, 204, 113, 0.35); }
+        .player-panel.active-S { border-color: #fd79a8; box-shadow: 0 0 14px rgba(253, 121, 168, 0.35); }
+        .player-panel.active-D { border-color: #f1c40f; box-shadow: 0 0 14px rgba(241, 196, 15, 0.35); }
+
+        .player-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+        }
+        .player-panel-title {
+            font-size: 17px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .player-type-btn {
+            height: 26px;
+            padding: 2px 8px;
+            font-size: 12px;
+            border-radius: 999px;
+            background: #2c3e50;
+            color: #ecf0f1;
+            border: 1px solid rgba(255,255,255,0.2);
+            cursor: pointer;
+        }
+        .player-type-btn.is-cpu {
+            background: #8e44ad;
+            border-color: #9b59b6;
+        }
+        .ability-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: #2c3e50;
+            padding: 8px 11px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        .ability-row.clickable { cursor: pointer; }
+        .ability-row.clickable:hover { border-color: rgba(255,255,255,0.35); }
+        .ability-row.mode-active-block { background: #f39c12; color: #fff; }
+        .ability-row.mode-active-remove { background: #8e44ad; color: #fff; }
+        .ability-row.depleted { opacity: 0.45; }
+        .ability-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .ability-count {
+            background: rgba(255,255,255,0.15);
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 14px;
+            min-width: 14px;
+            text-align: center;
+        }
+        .cell.old-win-tint {
+            background: linear-gradient(135deg, #ffcbb8 0%, #ff9a76 100%);
+            box-shadow: inset 0 0 0 3px #ff4500, 0 0 10px rgba(255, 69, 0, 0.45);
+        }
+        .cell.old-win-tint:hover {
+            background: linear-gradient(135deg, #ffb89e 0%, #ff8559 100%);
+        }
+        .cell.winning-cell {
+            background: linear-gradient(135deg, #d4efdf 0%, #a9dfbf 100%);
+            box-shadow: inset 0 0 0 3px #27ae60, 0 0 10px rgba(39, 174, 96, 0.5);
+        }
+        .reduce-banner {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            background: linear-gradient(135deg, #d35400, #e67e22);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 10px;
+            margin-bottom: 14px;
+            font-weight: bold;
+            font-size: 15px;
+            box-shadow: 0 4px 12px rgba(230, 126, 34, 0.4);
+            text-align: center;
+            max-width: 820px;
+            animation: pulseBanner 2s infinite ease-in-out;
+        }
+        @keyframes pulseBanner {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.015); }
+        }
+        .reduce-prompt, .tie-prompt {
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            padding: 8px;
+            border-radius: 8px;
+            text-align: center;
+            max-width: 195px;
+        }
+        .reduce-prompt {
+            background: rgba(230, 126, 34, 0.18);
+            border: 2px solid #e67e22;
+        }
+        .tie-prompt {
+            background: rgba(52, 152, 219, 0.18);
+            border: 2px solid #3498db;
+        }
+        .reduce-prompt-text {
+            font-size: 12px;
+            line-height: 1.3;
+            color: #fdebd0;
+            font-weight: bold;
+        }
+        .tie-prompt-text {
+            font-size: 12px;
+            line-height: 1.3;
+            color: #d6eaf8;
+            font-weight: bold;
+        }
+        .reduce-agree-btn, .reduce-decline-btn, .tie-accept-btn, .tie-decline-btn {
+            height: 34px;
+            padding: 4px 8px;
+            font-size: 12px;
+            border-radius: 6px;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .reduce-agree-btn { background-color: #e67e22; }
+        .reduce-agree-btn.agreed { background-color: #27ae60; cursor: default; }
+        .reduce-agree-btn.declined { background-color: #7f8c8d; cursor: default; }
+        .reduce-decline-btn, .tie-decline-btn { background-color: #7f8c8d; }
+        .tie-accept-btn { background-color: #27ae60; }
+        .prompt-btn-row {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+        }
+        .prompt-btn-row button { flex: 1; }
+        .tie-banner {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            background: linear-gradient(135deg, #2980b9, #3498db);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 10px;
+            margin-bottom: 14px;
+            font-weight: bold;
+            font-size: 15px;
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+            text-align: center;
+            max-width: 820px;
+            animation: pulseBanner 2s infinite ease-in-out;
+        }
+        .match-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 2px;
+            padding-top: 6px;
+            border-top: 1px solid rgba(255,255,255,0.12);
+        }
+        .match-action-btn {
+            flex: 1;
+            height: 34px;
+            padding: 4px 6px;
+            font-size: 12px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            color: #fff;
+        }
+        .match-action-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .offer-tie-btn { background-color: #2980b9; }
+        .offer-tie-btn.offered { background-color: #16a085; }
+        .resign-btn { background-color: #c0392b; }
+    </style>
+</head>
+<body>
+    <h1>Tic Tac Toe <span style="font-size: 16px; color: #bdc3c7; font-weight: normal;">(Up to 5 Players: X, O, △, □, —)</span></h1>
+
+    <!-- Top Navigation & Multiplayer Identity Bar -->
+    <div class="top-nav-bar">
+        <button id="tabBoardBtn" class="nav-tab-btn active" onclick="switchView('board')">🎮 Game Board</button>
+        <button id="tabLobbyBtn" class="nav-tab-btn" onclick="switchView('lobby')">🏟️ TAT Matchmaking & Lobby <span id="lobbyCountBadge" class="badge-pill">0</span></button>
+
+        <div class="identity-badge" id="seatSelectorBox">
+            <span>🕹️ Control on This Screen:</span>
+            <select id="localSeatSelect" onchange="onLocalSeatChange()">
+                <option value="ALL">All Human Players (Pass &amp; Play)</option>
+                <option value="X">Only Player X</option>
+                <option value="O">Only Player O</option>
+                <option value="T">Only Player △ (Triangle)</option>
+                <option value="S">Only Player □ (Square)</option>
+                <option value="D">Only Player — (Dash)</option>
+                <option value="SPECTATOR">Spectator Only</option>
+            </select>
+        </div>
+
+        <div class="identity-badge" id="activeMatchBadge" style="display: none; background: #16a085;">
+            <span id="activeMatchText">Matchmade Game</span>
+            <button class="lobby-btn danger" style="height: 28px; padding: 2px 10px; font-size: 12px;" onclick="leaveMatchmadeGame()">Leave to Quick Play</button>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- TAT / TAT 2 Matchmaking & Tournament Lobby                         -->
+    <!-- ================================================================== -->
+    <div class="lobby-container" id="lobbyView">
+        <div id="lanUrlBanner" style="display:none; background:rgba(52, 152, 219, 0.18); border:1px solid #3498db; color:#ecf0f1; padding:8px 14px; border-radius:8px; margin-bottom:12px; font-size:13px; text-align:center;"></div>
+        <div id="lobbyMessage" style="display:none; background:#27ae60; color:#fff; padding:10px 16px; border-radius:8px; margin-bottom:14px; font-weight:bold; text-align:center;"></div>
+        <div class="lobby-grid">
+            <!-- 1. Register Player -->
+            <div class="lobby-card">
+                <h2>
+                    <span>👤 Register Player</span>
+                    <button class="lobby-btn secondary" style="height:28px; padding:2px 10px; font-size:12px;" onclick="quickAddCpuBot()">+ Add CPU Bot</button>
+                </h2>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <input type="text" id="regPlayerName" class="lobby-input" placeholder="Your Player Name" style="flex:1;">
+                    <label style="display:flex; align-items:center; gap:5px; font-size:13px; cursor:pointer;">
+                        <input type="checkbox" id="regIsComputer"> 🤖 CPU
+                    </label>
+                    <button class="lobby-btn" onclick="registerLobbyPlayer()">Register</button>
+                </div>
+                <div style="font-size:13px; color:#bdc3c7;">
+                    Your active identity: <strong id="myRegisteredNameDisplay" style="color:#f1c40f;">Not registered</strong>
+                </div>
+                <div class="lobby-list" id="lobbyPlayersList"></div>
+            </div>
+
+            <!-- 2. Create Game Offer (2 to 5 Players) -->
+            <div class="lobby-card">
+                <h2>📢 Create Game Offer (2–5 Players)</h2>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                    <div>
+                        <label style="font-size:12px; display:block; margin-bottom:3px;">Players (Symbols):</label>
+                        <select id="offerNumPlayers" class="lobby-input" style="width:100%;" onchange="onOfferPlayersChange()">
+                            <option value="2">2 Players (X, O)</option>
+                            <option value="3">3 Players (X, O, △)</option>
+                            <option value="4">4 Players (X, O, △, □)</option>
+                            <option value="5">5 Players (X, O, △, □, —)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:12px; display:block; margin-bottom:3px;">Board Size:</label>
+                        <select id="offerBoardSize" class="lobby-input" style="width:100%;">
+                            <option value="3">3x3</option>
+                            <option value="4">4x4</option>
+                            <option value="5" selected>5x5</option>
+                            <option value="6">6x6</option>
+                            <option value="7">7x7</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:12px; display:block; margin-bottom:3px;">Win Amount:</label>
+                        <input type="number" id="offerHandicap" class="lobby-input" value="4" min="1" max="7" style="width:100%;">
+                    </div>
+                    <div>
+                        <label style="font-size:12px; display:block; margin-bottom:3px;">Time Control (min):</label>
+                        <input type="number" id="offerTimeControl" class="lobby-input" value="5" min="1" max="15" style="width:100%;">
+                    </div>
+                    <div>
+                        <label style="font-size:12px; display:block; margin-bottom:3px;">Blocks per Player:</label>
+                        <input type="number" id="offerBlocks" class="lobby-input" value="0" min="0" max="3" style="width:100%;">
+                    </div>
+                    <div>
+                        <label style="font-size:12px; display:block; margin-bottom:3px;">Removes per Player:</label>
+                        <input type="number" id="offerRemoves" class="lobby-input" value="0" min="0" max="3" style="width:100%;">
+                    </div>
+                </div>
+                <div>
+                    <label style="font-size:12px; display:block; margin-bottom:3px;">Win Reduction Mode:</label>
+                    <select id="offerWinReduction" class="lobby-input" style="width:100%;">
+                        <option value="off">Off</option>
+                        <option value="standard" selected>Standard</option>
+                        <option value="infinite">Infinite Win Reduction</option>
+                        <option value="lockdown">Lock Down</option>
+                        <option value="lockattack">Lock Attack</option>
+                    </select>
+                </div>
+                <button class="lobby-btn secondary" style="width:100%; height:42px; font-size:15px;" onclick="createLobbyOffer()">Post Game Offer</button>
+            </div>
+
+            <!-- 3. Open Offers -->
+            <div class="lobby-card">
+                <h2>
+                    <span>🤝 Open Offers</span>
+                    <span style="font-size:12px; font-weight:normal; color:#bdc3c7;">CPUs auto-join after 6s</span>
+                </h2>
+                <div class="lobby-list" id="lobbyOffersList">
+                    <div style="color:#95a5a6; text-align:center; padding:20px;">No open offers yet</div>
+                </div>
+            </div>
+
+            <!-- 4. Active Games -->
+            <div class="lobby-card">
+                <h2>⚔️ Games in Progress</h2>
+                <div class="lobby-list" id="lobbyGamesList">
+                    <div style="color:#95a5a6; text-align:center; padding:20px;">No active lobby games</div>
+                </div>
+            </div>
+
+            <!-- 5. Tournament & Leaderboard -->
+            <div class="lobby-card" style="grid-column: 1 / -1;">
+                <h2>
+                    <span>🏆 TAT Tournament &amp; Leaderboard</span>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <span id="tournamentStatusBadge" class="badge-pill">Idle</span>
+                        <input type="number" id="tournamentMinutesInput" class="lobby-input" value="10" min="1" max="120" style="width:65px; height:30px;" title="Tournament Duration (Minutes)">
+                        <span style="font-size:13px;">min</span>
+                        <button class="lobby-btn" style="height:30px; padding:2px 10px; font-size:12px;" onclick="startLobbyTournament()">Start Tournament</button>
+                        <button class="lobby-btn warning" style="height:30px; padding:2px 10px; font-size:12px;" onclick="clearLobbyScores()">Clear Scores</button>
+                        <button class="lobby-btn danger" style="height:30px; padding:2px 10px; font-size:12px;" onclick="resetLobbyTournament()">Reset All</button>
+                    </div>
+                </h2>
+                <div class="lobby-list" id="lobbyLeaderboardList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- Game Board View (Supports 2, 3, 4, or 5 Players)                   -->
+    <!-- ================================================================== -->
+    <div class="game-view-container" id="boardView">
+        <div class="timers" id="timersBar"></div>
+
+        <div class="time-travel-controls" id="timeTravelControls" style="display:flex; align-items:center; gap: 0.5rem; background: #34495e; padding: 8px 16px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+            <button id="prevMoveBtn" class="history-btn" onclick="prevMove()">&larr;</button>
+            <span id="moveIndicator" style="color: #bdc3c7; font-size: 16px; font-weight: bold; min-width: 80px; text-align: center;">Live</span>
+            <button id="nextMoveBtn" class="history-btn" onclick="nextMove()">&rarr;</button>
+            <button id="liveMoveBtn" class="history-btn" onclick="goLive()" style="display:none; background: #e74c3c; border: none; font-weight: bold;">Go Live</button>
+        </div>
+
+        <div class="info" id="info">Loading...</div>
+        <div class="reduce-banner" id="reduceBanner">
+            <span id="reduceBannerText">⚠️ Predicted Catscratch (Tie)! Would you like to reduce win amounts by 1?</span>
+        </div>
+        <div class="tie-banner" id="tieBanner">
+            <span id="tieBannerText">🤝 A tie has been offered!</span>
+        </div>
+
+        <div class="game-area">
+            <div class="side-panels-col" id="leftPanelsCol"></div>
+            <div class="board" id="board"></div>
+            <div class="side-panels-col" id="rightPanelsCol"></div>
+        </div>
+        <div class="extra-panels-row" id="bottomPanelsRow"></div>
+
+        <div class="controls" id="quickPlayControls">
+            <div class="settings-box">
+                <label for="numPlayersSelect">Players (Up to 5):</label>
+                <select id="numPlayersSelect" onchange="onNumPlayersChange()">
+                    <option value="2" selected>2 Players (X, O)</option>
+                    <option value="3">3 Players (X, O, △)</option>
+                    <option value="4">4 Players (X, O, △, □)</option>
+                    <option value="5">5 Players (X, O, △, □, —)</option>
+                </select>
+            </div>
+
+            <div class="settings-box">
+                <label for="boardSize">Board Size:</label>
+                <select id="boardSize" onchange="onBoardSizeChange()">
+                    <option value="1">1x1</option>
+                    <option value="2">2x2</option>
+                    <option value="3">3x3</option>
+                    <option value="4">4x4</option>
+                    <option value="5" selected>5x5</option>
+                    <option value="6">6x6</option>
+                    <option value="7">7x7</option>
+                </select>
+            </div>
+
+            <div class="settings-box">
+                <label>Win Amount</label>
+                <div class="flex-row" id="handicapInputsRow"></div>
+            </div>
+
+            <div class="settings-box">
+                <label for="timeControl">Time Control:</label>
+                <select id="timeControl" onchange="changeSize()"></select>
+            </div>
+
+            <div class="settings-box">
+                <label>AI Mode (CPUs)</label>
+                <button id="aiToggleBtn" class="toggle-btn" onclick="toggleAI()">ON</button>
+            </div>
+
+            <div class="settings-box">
+                <label>Blocks (Max 3)</label>
+                <div class="flex-row" id="blocksInputsRow"></div>
+            </div>
+
+            <div class="settings-box">
+                <label>Removes (Max 3)</label>
+                <div class="flex-row" id="removesInputsRow"></div>
+            </div>
+
+            <div class="settings-box">
+                <label>Remove Blocks</label>
+                <button id="removeBlocksToggleBtn" class="toggle-btn" onclick="toggleRemoveBlocks()">ON</button>
+            </div>
+
+            <div class="settings-box">
+                <label for="winReductionSelect">Win Reduction:</label>
+                <select id="winReductionSelect" onchange="onWinReductionChange()">
+                    <option value="off">Off</option>
+                    <option value="standard" selected>Standard</option>
+                    <option value="infinite">Infinite Win Reduction</option>
+                    <option value="lockdown">Lock Down</option>
+                    <option value="lockattack">Lock Attack</option>
+                </select>
+            </div>
+
+            <div class="settings-box">
+                <label>&nbsp;</label>
+                <button onclick="resetGame()">Restart Game</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ALL_PLAYERS = ['X', 'O', 'T', 'S', 'D'];
+        const PLAYER_META = {
+            X: { id: 'X', symbol: 'X', name: 'Player X', color: '#e74c3c', tintColor: '#b02a1b' },
+            O: { id: 'O', symbol: 'O', name: 'Player O', color: '#3498db', tintColor: '#1b6394' },
+            T: { id: 'T', symbol: '△', name: 'Player △', color: '#2ecc71', tintColor: '#1e8449' },
+            S: { id: 'S', symbol: '□', name: 'Player □', color: '#fd79a8', tintColor: '#ad1457' },
+            D: { id: 'D', symbol: '—', name: 'Player —', color: '#f1c40f', tintColor: '#b7950b' }
+        };
+
+        // Render PlayStation-inspired geometric SVG shapes for X, O, Triangle (△), Square (□), and Straight Line / Long Dash (—)
+        function getPlayerShapeHTML(p, isTinted = false) {
+            const meta = PLAYER_META[p];
+            if (!meta) return p || '';
+            const stroke = isTinted ? meta.tintColor : meta.color;
+            if (p === 'X') {
+                return `<svg class="ps-shape" viewBox="0 0 100 100"><line x1="20" y1="20" x2="80" y2="80" stroke="${stroke}" stroke-width="14" stroke-linecap="round"/><line x1="80" y1="20" x2="20" y2="80" stroke="${stroke}" stroke-width="14" stroke-linecap="round"/></svg>`;
+            }
+            if (p === 'O') {
+                return `<svg class="ps-shape" viewBox="0 0 100 100"><circle cx="50" cy="50" r="33" fill="none" stroke="${stroke}" stroke-width="14"/></svg>`;
+            }
+            if (p === 'T') {
+                return `<svg class="ps-shape" viewBox="0 0 100 100"><polygon points="50,16 86,80 14,80" fill="none" stroke="${stroke}" stroke-width="13" stroke-linejoin="round"/></svg>`;
+            }
+            if (p === 'S') {
+                return `<svg class="ps-shape" viewBox="0 0 100 100"><rect x="20" y="20" width="60" height="60" rx="4" fill="none" stroke="${stroke}" stroke-width="13" stroke-linejoin="round"/></svg>`;
+            }
+            if (p === 'D') {
+                return `<svg class="ps-shape" viewBox="0 0 100 100"><line x1="12" y1="50" x2="88" y2="50" stroke="${stroke}" stroke-width="16" stroke-linecap="round"/></svg>`;
+            }
+            return meta.symbol;
+        }
+
+        function formatPlayerLabel(p, data) {
+            const meta = PLAYER_META[p] || { symbol: p, name: `Player ${p}` };
+            const custom = data && data.playerNames && data.playerNames[p];
+            if (custom && custom !== meta.name) {
+                return `${custom} (${meta.symbol})`;
+            }
+            return meta.name;
+        }
+
+        const boardEl = document.getElementById('board');
+        const infoEl = document.getElementById('info');
+        let aiEnabled = true;
+        let allowRemoveBlocks = true;
+        let winReductionMode = 'standard';
+        let blockModeEnabled = false;
+        let removeModeEnabled = false;
+        let currentData = null;
+        let isComputerThinking = false;
+        let gameHistory = [];
+        let isViewingHistory = false;
+        let historyIndex = 0;
+
+        const configuredHandicaps = { X: 4, O: 4, T: 4, S: 4, D: 4 };
+        const configuredBlocks = { X: 0, O: 0, T: 0, S: 0, D: 0 };
+        const configuredRemoves = { X: 0, O: 0, T: 0, S: 0, D: 0 };
+        const configuredTypes = { X: 'human', O: 'cpu', T: 'cpu', S: 'cpu', D: 'cpu' };
+
+        let lastKnownHandicaps = null;
+        let aiAgreeTimeout = null;
+        let aiDiplomacyTimeout = null;
+        let lastAiScore = null;
+        let lastCheckedStatusMove = -1;
+
+        // URL / Matchmaking state
+        const urlParams = new URLSearchParams(window.location.search);
+        let activeGameId = urlParams.get('gameId') || 'default';
+        let myLobbyName = urlParams.get('player') || localStorage.getItem('ttt_player_name') || '';
+        let localSeatControl = urlParams.get('seat') || 'ALL';
+        const openedMatchIds = new Set(JSON.parse(sessionStorage.getItem('ttt_opened_matches') || '[]'));
+
+        function getBrowserId() {
+            let bid = localStorage.getItem('ttt_browser_id');
+            if (!bid) {
+                bid = 'ttt_' + Math.random().toString(36).substring(2, 11);
+                localStorage.setItem('ttt_browser_id', bid);
+            }
+            return bid;
+        }
+
+        function apiQuery(extra = '') {
+            const gid = `gameId=${encodeURIComponent(activeGameId)}&browserId=${encodeURIComponent(getBrowserId())}`;
+            return extra ? `?${gid}&${extra}` : `?${gid}`;
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT')) return;
+            if (e.key === 'ArrowLeft') prevMove();
+            if (e.key === 'ArrowRight') nextMove();
+        });
+
+        let initialTime = 300;
+        const playerTimes = { X: 300, O: 300, T: 300, S: 300, D: 300 };
+        let lastTick = 0;
+        let timerInterval = null;
+        let isPondering = false;
+
+        // Fill time control dropdown: 1 to 15 mins
+        (function () {
+            const sel = document.getElementById('timeControl');
+            for (let m = 1; m <= 15; m++) {
+                const opt = document.createElement('option');
+                opt.value = m * 60;
+                opt.innerText = m === 1 ? '1 min' : `${m} mins`;
+                if (m === 5) opt.selected = true;
+                sel.appendChild(opt);
+            }
+        })();
+
+        // Build per-player settings inputs & panels
+        function renderDynamicSettingsInputs(nPlayers) {
+            const active = ALL_PLAYERS.slice(0, nPlayers);
+            const hcRow = document.getElementById('handicapInputsRow');
+            const blRow = document.getElementById('blocksInputsRow');
+            const rmRow = document.getElementById('removesInputsRow');
+            const sizeNum = parseInt(document.getElementById('boardSize').value, 10) || 5;
+
+            hcRow.innerHTML = active.map((p) => {
+                const meta = PLAYER_META[p];
+                return `<label for="${p.toLowerCase()}Handicap" style="color:${meta.color}; margin:0;">${meta.symbol}:</label>
+                        <input type="number" id="${p.toLowerCase()}Handicap" value="${configuredHandicaps[p]}" min="1" max="${sizeNum}" onchange="onHandicapInputChange()">`;
+            }).join('');
+
+            blRow.innerHTML = active.map((p) => {
+                const meta = PLAYER_META[p];
+                return `<label for="${p.toLowerCase()}Blocks" style="color:${meta.color}; margin:0;">${meta.symbol}:</label>
+                        <input type="number" id="${p.toLowerCase()}Blocks" value="${configuredBlocks[p]}" min="0" max="3" onchange="onAbilityInputsChange()">`;
+            }).join('');
+
+            rmRow.innerHTML = active.map((p) => {
+                const meta = PLAYER_META[p];
+                return `<label for="${p.toLowerCase()}Removes" style="color:${meta.color}; margin:0;">${meta.symbol}:</label>
+                        <input type="number" id="${p.toLowerCase()}Removes" value="${configuredRemoves[p]}" min="0" max="3" onchange="onAbilityInputsChange()">`;
+            }).join('');
+        }
+
+        function createPlayerPanelHTML(p, compact = false) {
+            const meta = PLAYER_META[p];
+            const winLbl = compact ? '🎯 Win' : '🎯 Win Amount';
+            const blkLbl = compact ? '⬛ Blk' : '⬛ Blocks';
+            const remLbl = compact ? '✖ Rem' : '✖ Removes';
+            const redLbl = compact ? '📉 Red' : '📉 Reduction';
+            return `
+            <div class="player-panel" id="panel_${p}">
+                <div class="player-panel-header">
+                    <div class="player-panel-title" style="color: ${meta.color};" id="title_${p}">${meta.name}</div>
+                    <button class="player-type-btn" id="typeBtn_${p}" onclick="togglePlayerSlotType('${p}')" title="Switch between Human and CPU">👤 Human</button>
+                </div>
+                <div class="abilities-grid">
+                    <div class="ability-row" title="Current win amount needed for ${meta.name}">
+                        <span class="ability-label">${winLbl}</span>
+                        <span class="ability-count" id="winGoal_${p}">4</span>
+                    </div>
+                    <div class="ability-row" id="blocksRow_${p}" onclick="onAbilityRowClick('${p}', 'block')" title="Blocks remaining for ${meta.name}">
+                        <span class="ability-label">${blkLbl}</span>
+                        <span class="ability-count" id="blocksLeft_${p}">0</span>
+                    </div>
+                    <div class="ability-row" id="removesRow_${p}" onclick="onAbilityRowClick('${p}', 'remove')" title="Removes remaining for ${meta.name}">
+                        <span class="ability-label">${remLbl}</span>
+                        <span class="ability-count" id="removesLeft_${p}">0</span>
+                    </div>
+                    <div class="ability-row" id="reduceModeRow_${p}" style="display: none;" title="Win reduction mode for ${meta.name}">
+                        <span class="ability-label">${redLbl}</span>
+                        <span class="ability-count" id="reduceModeLabel_${p}">Standard</span>
+                    </div>
+                </div>
+                <div class="reduce-prompt" id="reducePrompt_${p}">
+                    <div class="reduce-prompt-text" id="reducePromptText_${p}">Would you like to reduce win amounts?</div>
+                    <div class="prompt-btn-row">
+                        <button class="reduce-agree-btn" id="reduceBtn_${p}" onclick="agreeReduce('${p}')">Agree (-1)</button>
+                        <button class="reduce-decline-btn" id="declineReduceBtn_${p}" onclick="declineReduce('${p}')">Decline</button>
+                    </div>
+                </div>
+                <div class="tie-prompt" id="tiePrompt_${p}">
+                    <div class="tie-prompt-text" id="tiePromptText_${p}">Tie offered!</div>
+                    <div class="prompt-btn-row">
+                        <button class="tie-accept-btn" onclick="respondTie('${p}', true)">Accept Tie</button>
+                        <button class="tie-decline-btn" id="tiePromptDeclineBtn_${p}" onclick="respondTie('${p}', false)">Decline</button>
+                    </div>
+                </div>
+                <div class="match-actions" id="matchActions_${p}">
+                    <button class="match-action-btn offer-tie-btn" id="offerTieBtn_${p}" onclick="offerTie('${p}')">🤝 Tie</button>
+                    <button class="match-action-btn resign-btn" id="resignBtn_${p}" onclick="resignGame('${p}')">🏳️ Resign</button>
+                </div>
+            </div>`;
+        }
+
+        let renderedPanelPlayersKey = '';
+        function ensurePlayerPanelsRendered(activePlayers) {
+            const key = activePlayers.join(',');
+            if (renderedPanelPlayersKey === key) return;
+            renderedPanelPlayersKey = key;
+
+            const gameArea = document.querySelector('.game-area');
+            if (gameArea) {
+                gameArea.classList.remove('players-2', 'players-3', 'players-4', 'players-5');
+                gameArea.classList.add(`players-${activePlayers.length}`);
+            }
+
+            const leftCol = document.getElementById('leftPanelsCol');
+            const rightCol = document.getElementById('rightPanelsCol');
+            const bottomRow = document.getElementById('bottomPanelsRow');
+            leftCol.innerHTML = '';
+            rightCol.innerHTML = '';
+            bottomRow.innerHTML = '';
+
+            const isCompact = activePlayers.length >= 3;
+            // Place all player boxes on either side of the board (even indices on left, odd indices on right)
+            activePlayers.forEach((p, idx) => {
+                if (idx % 2 === 0) {
+                    leftCol.insertAdjacentHTML('beforeend', createPlayerPanelHTML(p, isCompact));
+                } else {
+                    rightCol.insertAdjacentHTML('beforeend', createPlayerPanelHTML(p, isCompact));
+                }
+            });
+
+            // Render timers bar
+            const timersBar = document.getElementById('timersBar');
+            timersBar.innerHTML = activePlayers.map((p) => {
+                const meta = PLAYER_META[p];
+                return `<div class="timer-item" id="timerBox_${p}" style="color: ${meta.color};">
+                            <span id="timerLabel_${p}">${meta.name}:</span>
+                            <span id="timerVal_${p}">05:00</span>
+                        </div>`;
+            }).join('');
+        }
+
+        let worker = null;
+        let workerBig = null;
+        let activeSearchId = 0;
+
+        function ensureWorker(size) {
+            const big = size > 5;
+            if (worker && workerBig === big) return;
+            if (worker) worker.terminate();
+            workerBig = big;
+            isPondering = false;
+            worker = new Worker('ai-worker.js?v=' + Date.now() + (big ? '&big=1' : ''));
+            worker.onmessage = onWorkerMessage;
+        }
+
+        async function onWorkerMessage(e) {
+            let msg = e.data;
+            if (msg.type === 'MOVE') {
+                if (msg.searchId !== undefined && msg.searchId !== activeSearchId) {
+                    return;
+                }
+                isComputerThinking = false;
+                const actingP = msg.player || (currentData && currentData.currentPlayer) || 'O';
+                if (msg.score !== undefined && msg.score !== null) {
+                    lastAiScore = msg.score;
+                }
+                if (msg.resign || msg.action === 'resign') {
+                    await fetch(`/api/resign${apiQuery(`player=${actingP}`)}`);
+                    fetchState();
+                    return;
+                }
+                if (msg.move !== -1) {
+                    if (msg.action === 'block') {
+                        await fetch(`/api/block${apiQuery(`pos=${msg.move}&player=${actingP}`)}`);
+                    } else if (msg.action === 'remove') {
+                        await fetch(`/api/remove${apiQuery(`pos=${msg.move}&player=${actingP}`)}`);
+                    } else {
+                        await fetch(`/api/move${apiQuery(`pos=${msg.move}&player=${actingP}`)}`);
+                    }
+                    if (currentData && currentData.moveCount !== lastCheckedStatusMove) {
+                        lastCheckedStatusMove = currentData.moveCount;
+                        const sc = lastAiScore !== null ? `&score=${encodeURIComponent(lastAiScore)}` : '';
+                        await fetch(`/api/ai-diplomacy${apiQuery(`action=check-status&player=${actingP}${sc}`)}`);
+                    }
+                }
+                fetchState();
+            }
+        }
+
+        function isPlayerCpu(data, p) {
+            if (!data) return false;
+            if (data.playerTypes && data.playerTypes[p]) {
+                return data.playerTypes[p] === 'cpu';
+            }
+            return aiEnabled && p !== 'X';
+        }
+
+        function shouldLocalClientDriveCpu(data) {
+            if (!data) return false;
+            // In local/default mode or when controlling all seats, this browser drives CPUs
+            if (!data.gameId || data.gameId === 'default' || localSeatControl === 'ALL') return true;
+            // In a multi-computer matchmade game, the first non-eliminated human seat in activePlayers drives any CPU turns
+            const active = data.activePlayers || ['X', 'O'];
+            const elim = new Set(data.eliminatedPlayers || []);
+            const firstHumanSeat = active.find((p) => !elim.has(p) && !isPlayerCpu(data, p));
+            if (!firstHumanSeat) return true; // All-CPU game: any viewer can drive
+            return localSeatControl === firstHumanSeat;
+        }
+
+        function canLocalUserControlPlayer(data, p) {
+            if (!data || data.winner || data.draw) return false;
+            if ((data.eliminatedPlayers || []).includes(p)) return false;
+            if (isPlayerCpu(data, p)) return false;
+            const myBid = getBrowserId();
+            const ownerBid = data.playerBrowserIds && data.playerBrowserIds[p];
+            // In a matchmade game, each computer can ONLY control the seat bound to its browserId
+            if (data.gameId && data.gameId !== 'default') {
+                if (ownerBid) return ownerBid === myBid;
+                return localSeatControl === p;
+            }
+            // On the Quick Play board, if another computer claimed seat p, this computer cannot control it
+            if (ownerBid && ownerBid !== myBid) return false;
+            if (localSeatControl === 'SPECTATOR') return false;
+            if (localSeatControl !== 'ALL' && localSeatControl !== p) return false;
+            return true;
+        }
+
+        function startTimer() {
+            if (!timerInterval) {
+                lastTick = performance.now();
+                timerInterval = requestAnimationFrame(tickTimer);
+            }
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                cancelAnimationFrame(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function tickTimer() {
+            if (!currentData || currentData.winner || currentData.draw) {
+                stopTimer();
+                return;
+            }
+            let now = performance.now();
+            let dt = (now - lastTick) / 1000;
+            lastTick = now;
+
+            const cur = currentData.currentPlayer;
+            if (cur && playerTimes[cur] !== undefined) {
+                playerTimes[cur] -= dt;
+                if (playerTimes[cur] <= 0) {
+                    playerTimes[cur] = 0;
+                    handleTimeout(cur);
+                    return;
+                }
+            }
+            updateTimerUI();
+            timerInterval = requestAnimationFrame(tickTimer);
+        }
+
+        function formatTime(t) {
+            const clamped = Math.max(0, t);
+            let m = Math.floor(clamped / 60);
+            let s = Math.floor(clamped % 60);
+            return m + ":" + (s < 10 ? "0" : "") + s;
+        }
+
+        function updateTimerUI() {
+            const active = (currentData && currentData.activePlayers) || ['X', 'O'];
+            const elim = new Set((currentData && currentData.eliminatedPlayers) || []);
+            for (const p of active) {
+                const valEl = document.getElementById(`timerVal_${p}`);
+                const lblEl = document.getElementById(`timerLabel_${p}`);
+                const boxEl = document.getElementById(`timerBox_${p}`);
+                if (valEl) valEl.innerText = formatTime(playerTimes[p] !== undefined ? playerTimes[p] : initialTime);
+                if (lblEl && currentData) lblEl.innerText = `${formatPlayerLabel(p, currentData)}:`;
+                if (boxEl && currentData) {
+                    boxEl.classList.toggle('active-turn', !currentData.winner && !currentData.draw && currentData.currentPlayer === p);
+                    boxEl.classList.toggle('eliminated', elim.has(p));
+                }
+            }
+        }
+
+        async function handleTimeout(player) {
+            stopPondering();
+            await fetch(`/api/timeout${apiQuery(`player=${player}`)}`);
+            fetchState();
+        }
+
+        function toggleBlockMode() {
+            blockModeEnabled = !blockModeEnabled;
+            if (blockModeEnabled && removeModeEnabled) toggleRemoveMode();
+            if (currentData && !isViewingHistory) updateSideIndicators(currentData);
+        }
+
+        function toggleRemoveMode() {
+            removeModeEnabled = !removeModeEnabled;
+            if (removeModeEnabled && blockModeEnabled) toggleBlockMode();
+            boardEl.classList.toggle('remove-mode', removeModeEnabled);
+            if (currentData && !isViewingHistory) {
+                updateSideIndicators(currentData);
+                if (!currentData.winner && !currentData.draw) {
+                    const pLabel = formatPlayerLabel(currentData.currentPlayer, currentData);
+                    infoEl.innerText = removeModeEnabled
+                        ? (allowRemoveBlocks
+                            ? `${pLabel}: click any filled square to remove it`
+                            : `${pLabel}: click any player symbol square to remove it`)
+                        : `${pLabel}'s Turn`;
+                }
+            }
+        }
+
+        function onAbilityRowClick(player, type) {
+            if (isViewingHistory || !currentData || currentData.winner || currentData.draw) return;
+            if (currentData.currentPlayer !== player) return;
+            if (!canLocalUserControlPlayer(currentData, player)) return;
+
+            const blMap = currentData.blocks || { X: currentData.xBlocks || 0, O: currentData.oBlocks || 0 };
+            const rmMap = currentData.removes || { X: currentData.xRemoves || 0, O: currentData.oRemoves || 0 };
+
+            if (type === 'block') {
+                if ((blMap[player] || 0) > 0) toggleBlockMode();
+            } else if (type === 'remove') {
+                const size = currentData.boardSize || 5;
+                const hasRemovable = currentData.board.slice(0, size * size).some(isRemovableCell);
+                if ((rmMap[player] || 0) > 0 && hasRemovable) toggleRemoveMode();
+            }
+        }
+
+        async function togglePlayerSlotType(p) {
+            if (!currentData) return;
+            if (currentData.gameId && currentData.gameId !== 'default') return;
+            const ownerBid = currentData.playerBrowserIds && currentData.playerBrowserIds[p];
+            if (ownerBid && ownerBid !== getBrowserId()) return;
+            const currentlyCpu = isPlayerCpu(currentData, p);
+            const nextType = currentlyCpu ? 'human' : 'cpu';
+            configuredTypes[p] = nextType;
+            stopPondering();
+            const res = await fetch(`/api/set-player-type${apiQuery(`player=${p}&type=${nextType}`)}`);
+            if (!res.ok) return;
+            const updated = await res.json();
+            updateUI(updated);
+        }
+
+        function updateSideIndicators(data) {
+            if (!data) return;
+            const active = data.activePlayers || ['X', 'O'];
+            const elimSet = new Set(data.eliminatedPlayers || []);
+            ensurePlayerPanelsRendered(active);
+
+            const hcMap = data.handicaps || { X: data.xHandicap, O: data.oHandicap };
+            const blMap = data.blocks || { X: data.xBlocks || 0, O: data.oBlocks || 0 };
+            const rmMap = data.removes || { X: data.xRemoves || 0, O: data.oRemoves || 0 };
+            const redModes = data.reductionModes || { X: data.xReductionMode, O: data.oReductionMode };
+            const agreeMap = data.agreeReduce || { X: data.xAgreeReduce, O: data.oAgreeReduce };
+            const declineMap = data.declineReduce || { X: data.xDeclineReduce, O: data.oDeclineReduce };
+            const wrMode = data.winReductionMode || 'off';
+            const activeGame = !data.winner && !data.draw;
+            const activeLive = !isViewingHistory && activeGame;
+            const size = data.boardSize || 5;
+            const hasRemovable = data.board ? data.board.slice(0, size * size).some(isRemovableCell) : false;
+
+            const isCompact = active.length >= 3;
+            const formatReductionMode = (m) => {
+                if (m === 'infinite') return isCompact ? 'Infinite' : 'Infinite (Remove)';
+                if (m === 'lockdown') return isCompact ? 'Lock' : 'Lock Down (Block)';
+                if (m === 'standard') return isCompact ? 'Std' : 'Standard';
+                return 'Off';
+            };
+
+            const showReduce = !isViewingHistory && !!data.canReduceWinAmount;
+            const reduceBanner = document.getElementById('reduceBanner');
+            reduceBanner.style.display = showReduce ? 'flex' : 'none';
+
+            if (showReduce) {
+                const liveP = active.filter((p) => !elimSet.has(p));
+                const declinedP = liveP.find((p) => declineMap[p]);
+                if (declinedP) {
+                    document.getElementById('reduceBannerText').innerText =
+                        `⚠️ Predicted Tie! ${formatPlayerLabel(declinedP, data)} declined win reduction.`;
+                } else {
+                    const summary = liveP.map((p) => `${PLAYER_META[p].symbol}: ${Math.max(1, (hcMap[p] || 1) - 1)}`).join(', ');
+                    document.getElementById('reduceBannerText').innerText =
+                        `⚠️ Predicted Catscratch (Tie)! Reduce win amounts to ${summary}?`;
+                }
+            }
+
+            // Tie Banner
+            const tieBanner = document.getElementById('tieBanner');
+            const tieBannerText = document.getElementById('tieBannerText');
+            const tieAgreedSet = new Set(data.tieAgreedBy || []);
+            if (activeLive && data.tieOfferedBy) {
+                tieBanner.style.display = 'flex';
+                const offererLabel = formatPlayerLabel(data.tieOfferedBy, data);
+                const liveCount = active.filter((p) => !elimSet.has(p)).length;
+                tieBannerText.innerText = `🤝 ${offererLabel} offered a Tie! (${tieAgreedSet.size}/${liveCount} agreed)`;
+            } else if (activeLive && data.tieDeclinedBy) {
+                tieBanner.style.display = 'flex';
+                tieBannerText.innerText = `✗ ${formatPlayerLabel(data.tieDeclinedBy, data)} declined the tie offer.`;
+            } else {
+                tieBanner.style.display = 'none';
+            }
+
+            for (const p of active) {
+                const panel = document.getElementById(`panel_${p}`);
+                if (!panel) continue;
+                const isElim = elimSet.has(p);
+                const isCpu = isPlayerCpu(data, p);
+                const isTurn = activeGame && data.currentPlayer === p;
+                const canControl = canLocalUserControlPlayer(data, p);
+                const humanTurnHere = !isViewingHistory && isTurn && canControl;
+
+                panel.className = `player-panel ${isTurn ? 'active-' + p : ''} ${isElim ? 'eliminated-panel' : ''}`;
+
+                const titleEl = document.getElementById(`title_${p}`);
+                if (titleEl) {
+                    const elimReason = data.eliminationReasons && data.eliminationReasons[p];
+                    const elimBadge = isElim ? ` (${elimReason === 'timeout' ? '⏱️ Out' : '🏳️ Out'})` : '';
+                    titleEl.innerText = formatPlayerLabel(p, data) + elimBadge;
+                }
+
+                const typeBtn = document.getElementById(`typeBtn_${p}`);
+                if (typeBtn) {
+                    const isMatchmade = data.gameId && data.gameId !== 'default';
+                    const ownerBid = data.playerBrowserIds && data.playerBrowserIds[p];
+                    const ownedByOtherComputer = !isCpu && ownerBid && ownerBid !== getBrowserId();
+                    if (isMatchmade) {
+                        typeBtn.innerText = isCpu ? '🤖 CPU' : (canControl ? '👤 You' : '🔒 Remote');
+                        typeBtn.disabled = true;
+                        typeBtn.style.cursor = 'default';
+                    } else if (ownedByOtherComputer) {
+                        typeBtn.innerText = '🔒 Remote';
+                        typeBtn.disabled = true;
+                        typeBtn.style.cursor = 'not-allowed';
+                    } else {
+                        typeBtn.innerText = isCpu ? '🤖 CPU' : '👤 Human';
+                        typeBtn.disabled = false;
+                        typeBtn.style.cursor = 'pointer';
+                    }
+                    typeBtn.classList.toggle('is-cpu', isCpu);
+                }
+
+                document.getElementById(`winGoal_${p}`).innerText = hcMap[p] || size;
+                document.getElementById(`blocksLeft_${p}`).innerText = blMap[p] || 0;
+                document.getElementById(`removesLeft_${p}`).innerText = rmMap[p] || 0;
+
+                const bRow = document.getElementById(`blocksRow_${p}`);
+                const rRow = document.getElementById(`removesRow_${p}`);
+                bRow.classList.toggle('depleted', (blMap[p] || 0) <= 0);
+                rRow.classList.toggle('depleted', (rmMap[p] || 0) <= 0);
+                bRow.classList.toggle('clickable', humanTurnHere && (blMap[p] || 0) > 0);
+                rRow.classList.toggle('clickable', humanTurnHere && (rmMap[p] || 0) > 0 && hasRemovable);
+                bRow.classList.toggle('mode-active-block', humanTurnHere && blockModeEnabled);
+                rRow.classList.toggle('mode-active-remove', humanTurnHere && removeModeEnabled);
+
+                const rmRowEl = document.getElementById(`reduceModeRow_${p}`);
+                const pRM = redModes[p] || wrMode;
+                if (wrMode !== 'off') {
+                    rmRowEl.style.display = 'flex';
+                    document.getElementById(`reduceModeLabel_${p}`).innerText = formatReductionMode(pRM);
+                } else {
+                    rmRowEl.style.display = 'none';
+                }
+
+                // Win Reduction Prompt per player
+                const redPrompt = document.getElementById(`reducePrompt_${p}`);
+                const redBtn = document.getElementById(`reduceBtn_${p}`);
+                const decBtn = document.getElementById(`declineReduceBtn_${p}`);
+                if (showReduce && !isElim) {
+                    redPrompt.style.display = 'flex';
+                    const nextHc = Math.max(1, (hcMap[p] || 1) - 1);
+                    document.getElementById(`reducePromptText_${p}`).innerText =
+                        pRM === 'infinite'
+                            ? 'Reduce win amount? (New wins removed)'
+                            : pRM === 'lockdown'
+                            ? 'Reduce win amount? (New wins become blocks)'
+                            : 'Would you like to reduce win amounts?';
+                    redBtn.classList.toggle('agreed', !!agreeMap[p]);
+                    redBtn.classList.toggle('declined', !!declineMap[p]);
+                    redBtn.innerText = agreeMap[p]
+                        ? (isCpu ? '✓ CPU Agreed' : '✓ Agreed')
+                        : declineMap[p]
+                        ? (isCpu ? '✗ CPU Declined' : '✗ Declined')
+                        : `Agree (${hcMap[p]} → ${nextHc})`;
+                    redBtn.disabled = !!agreeMap[p] || !canControl;
+                    decBtn.style.display = (!canControl || agreeMap[p] || declineMap[p]) ? 'none' : 'inline-block';
+                } else {
+                    redPrompt.style.display = 'none';
+                }
+
+                // Tie Offer Prompt per player
+                const tiePrompt = document.getElementById(`tiePrompt_${p}`);
+                const shouldShowTiePrompt =
+                    activeLive &&
+                    !isElim &&
+                    canControl &&
+                    data.tieOfferedBy &&
+                    data.tieOfferedBy !== p &&
+                    !tieAgreedSet.has(p);
+                tiePrompt.style.display = shouldShowTiePrompt ? 'flex' : 'none';
+                if (shouldShowTiePrompt) {
+                    document.getElementById(`tiePromptText_${p}`).innerText =
+                        `${formatPlayerLabel(data.tieOfferedBy, data)} offers a tie!`;
+                }
+
+                // Match Actions (Offer Tie / Resign)
+                const matchActions = document.getElementById(`matchActions_${p}`);
+                const offerTieBtn = document.getElementById(`offerTieBtn_${p}`);
+                const resignBtn = document.getElementById(`resignBtn_${p}`);
+                matchActions.style.display = (activeLive && !isElim) ? 'flex' : 'none';
+                if (activeLive && !isElim) {
+                    const alreadyAgreedTie = tieAgreedSet.has(p);
+                    offerTieBtn.disabled = !canControl || alreadyAgreedTie;
+                    offerTieBtn.classList.toggle('offered', alreadyAgreedTie);
+                    offerTieBtn.innerText = alreadyAgreedTie
+                        ? (isCpu ? '🤖 Agreed' : '✓ Agreed')
+                        : data.tieOfferedBy
+                        ? '🤝 Accept'
+                        : '🤝 Tie';
+                    resignBtn.disabled = !canControl;
+                }
+            }
+        }
+
+        async function agreeReduce(player) {
+            if (isViewingHistory || !currentData || !currentData.canReduceWinAmount) return;
+            if (!canLocalUserControlPlayer(currentData, player)) return;
+            stopPondering();
+            if (worker) worker.postMessage({ type: 'CLEAR_TT' });
+            const aiParam = aiEnabled ? '&ai=1' : '';
+            await fetch(`/api/agree-reduce${apiQuery(`player=${player}${aiParam}`)}`);
+            fetchState();
+        }
+
+        async function declineReduce(player) {
+            if (isViewingHistory || !currentData || !currentData.canReduceWinAmount) return;
+            if (!canLocalUserControlPlayer(currentData, player)) return;
+            if (currentData.agreeReduce && currentData.agreeReduce[player]) return;
+            const aiParam = aiEnabled ? '&ai=1' : '';
+            await fetch(`/api/decline-reduce${apiQuery(`player=${player}${aiParam}`)}`);
+            fetchState();
+        }
+
+        async function offerTie(player) {
+            if (isViewingHistory || !currentData || currentData.winner || currentData.draw) return;
+            if (!canLocalUserControlPlayer(currentData, player)) return;
+            await fetch(`/api/offer-tie${apiQuery(`player=${player}`)}`);
+            fetchState();
+        }
+
+        async function respondTie(player, accept) {
+            if (isViewingHistory || !currentData || currentData.winner || currentData.draw) return;
+            if (!canLocalUserControlPlayer(currentData, player)) return;
+            await fetch(`/api/respond-tie${apiQuery(`player=${player}&accept=${accept ? 1 : 0}`)}`);
+            fetchState();
+        }
+
+        async function resignGame(player) {
+            if (isViewingHistory || !currentData || currentData.winner || currentData.draw) return;
+            if (!canLocalUserControlPlayer(currentData, player)) return;
+            stopPondering();
+            await fetch(`/api/resign${apiQuery(`player=${player}`)}`);
+            fetchState();
+        }
+
+        async function onWinReductionChange() {
+            winReductionMode = document.getElementById('winReductionSelect').value;
+            await fetch(`/api/set-win-reduction${apiQuery(`mode=${encodeURIComponent(winReductionMode)}`)}`);
+            fetchState();
+        }
+
+        async function toggleRemoveBlocks() {
+            allowRemoveBlocks = !allowRemoveBlocks;
+            const btn = document.getElementById('removeBlocksToggleBtn');
+            btn.innerText = allowRemoveBlocks ? "ON" : "OFF";
+            btn.style.backgroundColor = allowRemoveBlocks ? "#27ae60" : "#7f8c8d";
+            stopPondering();
+            if (worker) worker.postMessage({ type: 'CLEAR_TT' });
+            await fetch(`/api/set-remove-blocks${apiQuery(`allow=${allowRemoveBlocks ? 1 : 0}`)}`);
+            fetchState();
+        }
+
+        async function toggleAI() {
+            aiEnabled = !aiEnabled;
+            const btn = document.getElementById('aiToggleBtn');
+            btn.innerText = aiEnabled ? "ON" : "OFF";
+            btn.style.backgroundColor = aiEnabled ? "#27ae60" : "#7f8c8d";
+
+            const active = (currentData && currentData.activePlayers) || ['X', 'O'];
+            for (const p of active) {
+                if (p === 'X') continue;
+                const t = aiEnabled ? 'cpu' : 'human';
+                configuredTypes[p] = t;
+                await fetch(`/api/set-player-type${apiQuery(`player=${p}&type=${t}`)}`);
+            }
+            fetchState();
+        }
+
+        function stopPondering() {
+            if (isPondering && worker) {
+                worker.postMessage({ type: 'STOP_PONDER' });
+                isPondering = false;
+            }
+        }
+
+        function triggerAI(player = 'O') {
+            stopPondering();
+            isComputerThinking = true;
+            activeSearchId += 1;
+            const remSec = playerTimes[player] !== undefined ? playerTimes[player] : 300;
+            let timeLimit = Math.max(400, Math.min(2500, remSec * 1000 * 0.05));
+
+            worker.postMessage({
+                type: 'START_SEARCH',
+                searchId: activeSearchId,
+                player: player,
+                activePlayers: currentData.activePlayers || ['X', 'O'],
+                eliminatedPlayers: currentData.eliminatedPlayers || [],
+                board: currentData.board,
+                size: currentData.boardSize,
+                handicaps: currentData.handicaps,
+                blocks: currentData.blocks,
+                removes: currentData.removes,
+                playerScores: currentData.playerScores || {},
+                ignoredWinLines: currentData.ignoredWinLines,
+                xhc: currentData.xHandicap,
+                ohc: currentData.oHandicap,
+                xbl: currentData.xBlocks,
+                obl: currentData.oBlocks,
+                xrm: currentData.xRemoves || 0,
+                orm: currentData.oRemoves || 0,
+                allowRemoveBlocks: allowRemoveBlocks,
+                ignoredXLines: currentData.ignoredWinLines ? currentData.ignoredWinLines.X : [],
+                ignoredOLines: currentData.ignoredWinLines ? currentData.ignoredWinLines.O : [],
+                timeLimit: timeLimit,
+                isO: player === 'O'
+            });
+        }
+
+        function triggerPonder() {
+            if (!currentData || currentData.winner || currentData.draw) return;
+            const active = currentData.activePlayers || ['X', 'O'];
+            if (active.length === 2 && aiEnabled && currentData.currentPlayer === 'X' && isPlayerCpu(currentData, 'O')) {
+                stopPondering();
+                isPondering = true;
+                worker.postMessage({
+                    type: 'START_PONDER',
+                    board: currentData.board,
+                    size: currentData.boardSize,
+                    xhc: currentData.xHandicap,
+                    ohc: currentData.oHandicap,
+                    xbl: currentData.xBlocks,
+                    obl: currentData.oBlocks,
+                    xrm: currentData.xRemoves || 0,
+                    orm: currentData.oRemoves || 0,
+                    allowRemoveBlocks: allowRemoveBlocks,
+                    ignoredXLines: currentData.ignoredWinLines ? currentData.ignoredWinLines.X : [],
+                    ignoredOLines: currentData.ignoredWinLines ? currentData.ignoredWinLines.O : [],
+                    isO: true
+                });
+            }
+        }
+
+        async function fetchState() {
+            try {
+                const res = await fetch(`/api/state${apiQuery()}`);
+                const data = await res.json();
+                updateUI(data);
+            } catch (e) {
+                console.error("Failed to fetch state:", e);
+            }
+        }
+
+        async function prevMove() {
+            if (isViewingHistory && gameHistory.length > 0) {
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    renderHistoryState(gameHistory[historyIndex]);
+                    updateTimeTravelUI(gameHistory[historyIndex]);
+                }
+            } else {
+                try {
+                    const res = await fetch(`/api/history${apiQuery('t=' + Date.now())}`);
+                    if (!res.ok) return;
+                    const history = await res.json();
+                    if (history && history.length > 0) {
+                        gameHistory = history;
+                        isViewingHistory = true;
+                        historyIndex = Math.max(0, history.length - 2);
+                        renderHistoryState(gameHistory[historyIndex]);
+                        updateTimeTravelUI(gameHistory[historyIndex]);
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch history:", e);
+                }
+            }
+        }
+
+        function nextMove() {
+            if (!isViewingHistory || gameHistory.length === 0) return;
+            if (historyIndex < gameHistory.length - 1) {
+                historyIndex++;
+                renderHistoryState(gameHistory[historyIndex]);
+                updateTimeTravelUI(gameHistory[historyIndex]);
+            } else {
+                goLive();
+            }
+        }
+
+        function goLive() {
+            isViewingHistory = false;
+            fetchState();
+        }
+
+        function updateTimeTravelUI(state) {
+            const indicator = document.getElementById('moveIndicator');
+            const liveBtn = document.getElementById('liveMoveBtn');
+            const prevBtn = document.getElementById('prevMoveBtn');
+            const nextBtn = document.getElementById('nextMoveBtn');
+
+            if (isViewingHistory) {
+                indicator.innerText = `Move ${historyIndex + 1}/${gameHistory.length}`;
+                indicator.style.color = '#f59e0b';
+                liveBtn.style.display = 'inline-block';
+                prevBtn.disabled = (historyIndex <= 0);
+                nextBtn.disabled = false;
+            } else {
+                indicator.innerText = state && state.moveCount !== undefined ? `Live (M${state.moveCount})` : 'Live';
+                indicator.style.color = '#bdc3c7';
+                liveBtn.style.display = 'none';
+                prevBtn.disabled = false;
+                nextBtn.disabled = true;
+            }
+        }
+
+        function renderBoardCells(data, showRemovable) {
+            const size = data.boardSize || 5;
+            if (boardEl.children.length !== size * size) {
+                boardEl.innerHTML = '';
+                boardEl.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+                boardEl.style.gridTemplateRows = `repeat(${size}, 1fr)`;
+
+                const gapSize = size > 3 ? 5 : 10;
+                boardEl.style.gap = `${gapSize}px`;
+
+                const fontSize = size === 1 ? 120 :
+                                 size === 2 ? 80 :
+                                 size === 3 ? 64 :
+                                 size === 4 ? 48 :
+                                 size === 5 ? 36 :
+                                 size === 6 ? 30 : 26;
+
+                for (let i = 0; i < size * size; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.style.fontSize = `${fontSize}px`;
+                    cell.onclick = () => userMove(i);
+                    boardEl.appendChild(cell);
+                }
+            }
+
+            const tintedSet = new Set(data.tintedCells || []);
+            const winningSet = new Set(data.winningCells || []);
+            const cells = boardEl.children;
+            for (let i = 0; i < size * size; i++) {
+                const isTinted = tintedSet.has(i);
+                const isWinCell = winningSet.has(i);
+                const val = data.board[i];
+                cells[i].classList.toggle('removable', showRemovable && isRemovableCell(val));
+                cells[i].classList.toggle('old-win-tint', isTinted);
+                cells[i].classList.toggle('winning-cell', isWinCell);
+                cells[i].title = isTinted
+                    ? 'Pre-existing win before reduction (does not count unless part of a new win)'
+                    : '';
+
+                if (val === 'B') {
+                    cells[i].innerHTML = '⬛';
+                    cells[i].style.color = '#7f8c8d';
+                } else if (val && PLAYER_META[val]) {
+                    cells[i].innerHTML = getPlayerShapeHTML(val, isTinted);
+                } else {
+                    cells[i].innerHTML = '';
+                }
+            }
+        }
+
+        function formatOutcomeText(data) {
+            if (data.winner) {
+                const winLabel = formatPlayerLabel(data.winner, data);
+                if (data.winReason === 'resign' && data.resignedBy) {
+                    return `🏳️ ${formatPlayerLabel(data.resignedBy, data)} Resigned — ${winLabel} Wins! 🎉`;
+                }
+                if (data.winReason === 'timeout') {
+                    return `⏱️ Time Out — ${winLabel} Wins! 🎉`;
+                }
+                return `${winLabel} Wins! 🎉`;
+            }
+            if (data.draw) {
+                if (data.drawReason === 'mutual') {
+                    return `It's a Draw by Mutual Agreement! 🤝`;
+                }
+                return `It's a Draw! 🤝`;
+            }
+            return `${formatPlayerLabel(data.currentPlayer, data)}'s Turn`;
+        }
+
+        function renderHistoryState(data) {
+            renderBoardCells(data, false);
+            updateSideIndicators(data);
+            infoEl.innerText = formatOutcomeText(data);
+        }
+
+        function isRemovableCell(val) {
+            return !!val && (allowRemoveBlocks || val !== 'B');
+        }
+
+        function updateUI(data) {
+            const prevHandicaps = lastKnownHandicaps;
+            currentData = data;
+            lastKnownHandicaps = { ...(data.handicaps || { X: data.xHandicap, O: data.oHandicap }) };
+
+            const active = data.activePlayers || ['X', 'O'];
+            const nPlayers = data.numPlayers || active.length;
+            ensureWorker(data.boardSize || 5);
+
+            // Sync server-tracked clocks if in a matchmade game
+            if (data.gameId && data.gameId !== 'default' && data.playerTimes) {
+                for (const p of active) {
+                    if (data.playerTimes[p] !== undefined) {
+                        playerTimes[p] = data.playerTimes[p];
+                    }
+                }
+            }
+
+            if (data.allowRemoveBlocks !== undefined) {
+                allowRemoveBlocks = !!data.allowRemoveBlocks;
+                const rbBtn = document.getElementById('removeBlocksToggleBtn');
+                rbBtn.innerText = allowRemoveBlocks ? "ON" : "OFF";
+                rbBtn.style.backgroundColor = allowRemoveBlocks ? "#27ae60" : "#7f8c8d";
+            }
+            if (data.winReductionMode !== undefined) {
+                winReductionMode = data.winReductionMode || 'off';
+                const wrSel = document.getElementById('winReductionSelect');
+                if (wrSel) wrSel.value = winReductionMode;
+            }
+
+            const size = data.boardSize || 5;
+            const npSel = document.getElementById('numPlayersSelect');
+            if (npSel && parseInt(npSel.value, 10) !== nPlayers) {
+                npSel.value = String(nPlayers);
+                renderDynamicSettingsInputs(nPlayers);
+            }
+
+            for (const p of active) {
+                const hcEl = document.getElementById(`${p.toLowerCase()}Handicap`);
+                if (hcEl && data.handicaps && data.handicaps[p] !== undefined) {
+                    hcEl.value = data.handicaps[p];
+                }
+            }
+
+            if (!isViewingHistory) {
+                const curP = data.currentPlayer;
+                const humanTurn = !data.winner && !data.draw && canLocalUserControlPlayer(data, curP);
+                const blMap = data.blocks || { X: data.xBlocks || 0, O: data.oBlocks || 0 };
+                const rmMap = data.removes || { X: data.xRemoves || 0, O: data.oRemoves || 0 };
+
+                if (((blMap[curP] || 0) <= 0 || !humanTurn) && blockModeEnabled) {
+                    toggleBlockMode();
+                }
+
+                const slice = data.board.slice(0, size * size);
+                const boardFull = slice.every((v) => v);
+                const hasRemovable = slice.some(isRemovableCell);
+                if ((rmMap[curP] || 0) > 0 && humanTurn) {
+                    if (boardFull && hasRemovable && !removeModeEnabled) toggleRemoveMode();
+                    if (!hasRemovable && removeModeEnabled) toggleRemoveMode();
+                } else {
+                    if (removeModeEnabled) toggleRemoveMode();
+                }
+
+                renderBoardCells(data, true);
+                updateSideIndicators(data);
+                updateTimeTravelUI(data);
+                updateTimerUI();
+
+                // Have any active CPU players respond to tie offers or win reduction offers
+                const elimSet = new Set(data.eliminatedPlayers || []);
+                const liveCpus = active.filter((p) => !elimSet.has(p) && isPlayerCpu(data, p));
+                if (liveCpus.length > 0 && !data.winner && !data.draw && shouldLocalClientDriveCpu(data)) {
+                    const tieAgreedSet = new Set(data.tieAgreedBy || []);
+                    const cpuNeedsTieResponse = data.tieOfferedBy && liveCpus.some((c) => c !== data.tieOfferedBy && !tieAgreedSet.has(c));
+                    const agreeMap = data.agreeReduce || {};
+                    const declineMap = data.declineReduce || {};
+                    const cpuNeedsReduceVote = data.canReduceWinAmount && liveCpus.some((c) => !agreeMap[c] && !declineMap[c]);
+
+                    if (cpuNeedsTieResponse && !aiDiplomacyTimeout) {
+                        aiDiplomacyTimeout = setTimeout(async () => {
+                            aiDiplomacyTimeout = null;
+                            const sc = lastAiScore !== null ? `&score=${encodeURIComponent(lastAiScore)}` : '';
+                            await fetch(`/api/ai-diplomacy${apiQuery(`action=respond-tie${sc}`)}`);
+                            fetchState();
+                        }, 380);
+                    } else if (cpuNeedsReduceVote && !aiAgreeTimeout) {
+                        aiAgreeTimeout = setTimeout(async () => {
+                            aiAgreeTimeout = null;
+                            const sc = lastAiScore !== null ? `&score=${encodeURIComponent(lastAiScore)}` : '';
+                            await fetch(`/api/ai-diplomacy${apiQuery(`action=evaluate-reduce${sc}`)}`);
+                            fetchState();
+                        }, 350);
+                    }
+                }
+            }
+
+            let justReduced = false;
+            if (prevHandicaps && data.handicaps) {
+                for (const p of active) {
+                    if (prevHandicaps[p] !== undefined && data.handicaps[p] < prevHandicaps[p]) {
+                        justReduced = true;
+                    }
+                }
+            }
+            if (justReduced && worker) {
+                stopPondering();
+                worker.postMessage({ type: 'CLEAR_TT' });
+            }
+
+            if (data.winner || data.draw) {
+                if (!isViewingHistory) infoEl.innerText = formatOutcomeText(data);
+                isComputerThinking = false;
+                stopTimer();
+                stopPondering();
+            } else {
+                if (!isViewingHistory) {
+                    const pLabel = formatPlayerLabel(data.currentPlayer, data);
+                    if (justReduced) {
+                        const summary = active.map((p) => `${PLAYER_META[p].symbol}: ${data.handicaps[p]}`).join(', ');
+                        infoEl.innerText = `Win amounts reduced (${summary})! — ${pLabel}'s Turn`;
+                    } else {
+                        infoEl.innerText = removeModeEnabled
+                            ? (allowRemoveBlocks
+                                ? `${pLabel}: click a filled square to remove it`
+                                : `${pLabel}: click a player square to remove it`)
+                            : `${pLabel}'s Turn`;
+                    }
+                }
+                startTimer();
+
+                if (isPlayerCpu(data, data.currentPlayer) && !isComputerThinking && shouldLocalClientDriveCpu(data)) {
+                    triggerAI(data.currentPlayer);
+                } else if (!isPlayerCpu(data, data.currentPlayer)) {
+                    isComputerThinking = false;
+                    triggerPonder();
+                }
+            }
+        }
+
+        async function userMove(pos) {
+            if (isViewingHistory) return;
+            if (!currentData || currentData.winner || currentData.draw) return;
+            const curP = currentData.currentPlayer;
+            if (!canLocalUserControlPlayer(currentData, curP)) return;
+
+            if (removeModeEnabled) {
+                if (!isRemovableCell(currentData.board[pos])) return;
+                stopPondering();
+                await fetch(`/api/remove${apiQuery(`pos=${pos}&player=${curP}`)}`);
+                if (removeModeEnabled) toggleRemoveMode();
+                fetchState();
+                return;
+            }
+
+            if (currentData.board[pos]) return;
+            stopPondering();
+
+            if (blockModeEnabled) {
+                await fetch(`/api/block${apiQuery(`pos=${pos}&player=${curP}`)}`);
+                const blMap = currentData.blocks || { X: currentData.xBlocks || 0, O: currentData.oBlocks || 0 };
+                if ((blMap[curP] || 0) <= 1 && blockModeEnabled) {
+                    toggleBlockMode();
+                }
+                fetchState();
+            } else {
+                await fetch(`/api/move${apiQuery(`pos=${pos}&player=${curP}`)}`);
+                fetchState();
+            }
+        }
+
+        function onNumPlayersChange() {
+            const nPlayers = parseInt(document.getElementById('numPlayersSelect').value, 10) || 2;
+            renderDynamicSettingsInputs(nPlayers);
+            changeSize();
+        }
+
+        function onBoardSizeChange() {
+            const sizeNum = parseInt(document.getElementById('boardSize').value, 10) || 5;
+            const nPlayers = parseInt(document.getElementById('numPlayersSelect').value, 10) || 2;
+            for (const p of ALL_PLAYERS.slice(0, nPlayers)) {
+                if (configuredHandicaps[p] > sizeNum) configuredHandicaps[p] = sizeNum;
+            }
+            renderDynamicSettingsInputs(nPlayers);
+            changeSize();
+        }
+
+        function onHandicapInputChange() {
+            const sizeNum = parseInt(document.getElementById('boardSize').value, 10) || 5;
+            const nPlayers = parseInt(document.getElementById('numPlayersSelect').value, 10) || 2;
+            for (const p of ALL_PLAYERS.slice(0, nPlayers)) {
+                const el = document.getElementById(`${p.toLowerCase()}Handicap`);
+                if (el) {
+                    configuredHandicaps[p] = Math.min(sizeNum, Math.max(1, parseInt(el.value, 10) || sizeNum));
+                    el.value = configuredHandicaps[p];
+                }
+            }
+            changeSize();
+        }
+
+        function onAbilityInputsChange() {
+            const nPlayers = parseInt(document.getElementById('numPlayersSelect').value, 10) || 2;
+            for (const p of ALL_PLAYERS.slice(0, nPlayers)) {
+                const bEl = document.getElementById(`${p.toLowerCase()}Blocks`);
+                const rEl = document.getElementById(`${p.toLowerCase()}Removes`);
+                if (bEl) configuredBlocks[p] = Math.min(3, Math.max(0, parseInt(bEl.value, 10) || 0));
+                if (rEl) configuredRemoves[p] = Math.min(3, Math.max(0, parseInt(rEl.value, 10) || 0));
+            }
+            changeSize();
+        }
+
+        async function changeSize() {
+            const size = parseInt(document.getElementById('boardSize').value, 10) || 5;
+            const nPlayers = parseInt(document.getElementById('numPlayersSelect').value, 10) || 2;
+            const timeCtrl = parseInt(document.getElementById('timeControl').value, 10) || 300;
+            const active = ALL_PLAYERS.slice(0, nPlayers);
+
+            isComputerThinking = false;
+            activeSearchId += 1;
+            isViewingHistory = false;
+            gameHistory = [];
+            historyIndex = 0;
+            lastKnownHandicaps = null;
+            lastAiScore = null;
+            lastCheckedStatusMove = -1;
+
+            stopTimer();
+            stopPondering();
+            if (removeModeEnabled) toggleRemoveMode();
+            if (blockModeEnabled) toggleBlockMode();
+            ensureWorker(size);
+            worker.postMessage({ type: 'CLEAR_TT' });
+
+            initialTime = timeCtrl;
+            for (const p of ALL_PLAYERS) {
+                playerTimes[p] = initialTime;
+            }
+
+            const qParts = [
+                `size=${size}`,
+                `players=${nPlayers}`,
+                `starting=random`,
+                `time=${timeCtrl}`,
+                `removeblocks=${allowRemoveBlocks ? 1 : 0}`,
+                `winreduction=${encodeURIComponent(winReductionMode)}`
+            ];
+            for (const p of active) {
+                const low = p.toLowerCase();
+                const hc = Math.min(size, Math.max(1, configuredHandicaps[p] || size));
+                configuredHandicaps[p] = hc;
+                const t = p === 'X' ? configuredTypes.X : (aiEnabled ? 'cpu' : 'human');
+                configuredTypes[p] = t;
+                qParts.push(`${low}hc=${hc}`);
+                qParts.push(`${low}blocks=${configuredBlocks[p] || 0}`);
+                qParts.push(`${low}removes=${configuredRemoves[p] || 0}`);
+                qParts.push(`${low}type=${t}`);
+            }
+
+            try {
+                const res = await fetch(`/api/reset${apiQuery(qParts.join('&'))}`);
+                if (!res.ok) throw new Error("Server error");
+                await fetchState();
+            } catch (e) {
+                setTimeout(changeSize, 500);
+            }
+        }
+
+        function resetGame() {
+            changeSize();
+        }
+
+        async function onLocalSeatChange() {
+            const prevSeat = localSeatControl;
+            localSeatControl = document.getElementById('localSeatSelect').value;
+            if (activeGameId === 'default') {
+                if (prevSeat && ALL_PLAYERS.includes(prevSeat) && prevSeat !== localSeatControl) {
+                    await fetch(`/api/claim-seat${apiQuery(`player=${prevSeat}&release=1`)}`);
+                }
+                if (ALL_PLAYERS.includes(localSeatControl)) {
+                    const nameParam = myLobbyName ? `&name=${encodeURIComponent(myLobbyName)}` : '';
+                    const res = await fetch(`/api/claim-seat${apiQuery(`player=${localSeatControl}${nameParam}`)}`);
+                    if (!res.ok) {
+                        alert('That seat is already claimed by another computer!');
+                        localSeatControl = 'SPECTATOR';
+                        document.getElementById('localSeatSelect').value = 'SPECTATOR';
+                    }
+                }
+                fetchState();
+            } else if (currentData) {
+                updateSideIndicators(currentData);
+            }
+        }
+
+        // ====================================================================
+        // TAT / TAT 2 Matchmaking & Tournament Lobby Client Logic
+        // ====================================================================
+        function switchView(view) {
+            const isLobby = view === 'lobby';
+            document.getElementById('lobbyView').classList.toggle('active', isLobby);
+            document.getElementById('boardView').classList.toggle('hidden', isLobby);
+            document.getElementById('tabLobbyBtn').classList.toggle('active', isLobby);
+            document.getElementById('tabBoardBtn').classList.toggle('active', !isLobby);
+            if (isLobby) updateLobbyStatus();
+        }
+
+        function showLobbyBanner(msg, isError = false) {
+            const el = document.getElementById('lobbyMessage');
+            el.style.display = 'block';
+            el.style.background = isError ? '#c0392b' : '#27ae60';
+            el.innerText = msg;
+            setTimeout(() => { el.style.display = 'none'; }, 4000);
+        }
+
+        async function registerLobbyPlayer() {
+            const nameInput = document.getElementById('regPlayerName');
+            const isCompInput = document.getElementById('regIsComputer');
+            const name = nameInput.value.trim();
+            const isComputer = isCompInput.checked;
+            if (!name) return showLobbyBanner('Please enter a player name', true);
+
+            const res = await fetch('/api/lobby/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, isComputer, browserId: getBrowserId() })
+            });
+            const data = await res.json();
+            if (!res.ok) return showLobbyBanner(data.error || 'Registration failed', true);
+
+            if (!isComputer) {
+                myLobbyName = data.player.name;
+                localStorage.setItem('ttt_player_name', myLobbyName);
+                document.getElementById('myRegisteredNameDisplay').innerText = myLobbyName;
+            }
+            nameInput.value = '';
+            isCompInput.checked = false;
+            showLobbyBanner(data.message);
+            updateLobbyStatus();
+        }
+
+        async function quickAddCpuBot() {
+            const botNum = Math.floor(10 + Math.random() * 90);
+            const name = `PS-Bot-${botNum}`;
+            await fetch('/api/lobby/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, isComputer: true })
+            });
+            showLobbyBanner(`Added ${name} (CPU) to the lobby!`);
+            updateLobbyStatus();
+        }
+
+        function onOfferPlayersChange() {
+            const np = parseInt(document.getElementById('offerNumPlayers').value, 10) || 2;
+            const bSizeEl = document.getElementById('offerBoardSize');
+            const hcEl = document.getElementById('offerHandicap');
+            if (np >= 4 && parseInt(bSizeEl.value, 10) < 6) {
+                bSizeEl.value = '6';
+                hcEl.value = '3';
+            }
+        }
+
+        async function createLobbyOffer() {
+            if (!myLobbyName) {
+                const typed = document.getElementById('regPlayerName').value.trim();
+                if (typed) {
+                    await registerLobbyPlayer();
+                } else {
+                    return showLobbyBanner('Please register your Player Name first!', true);
+                }
+            }
+            const requiredPlayers = parseInt(document.getElementById('offerNumPlayers').value, 10) || 2;
+            const boardSize = parseInt(document.getElementById('offerBoardSize').value, 10) || 5;
+            const handicap = parseInt(document.getElementById('offerHandicap').value, 10) || 4;
+            const timeControl = parseInt(document.getElementById('offerTimeControl').value, 10) || 5;
+            const blocks = parseInt(document.getElementById('offerBlocks').value, 10) || 0;
+            const removes = parseInt(document.getElementById('offerRemoves').value, 10) || 0;
+            const winReductionMode = document.getElementById('offerWinReduction').value || 'standard';
+
+            const res = await fetch('/api/lobby/offers/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    creator: myLobbyName,
+                    browserId: getBrowserId(),
+                    requiredPlayers,
+                    boardSize,
+                    handicap,
+                    timeControl,
+                    blocks,
+                    removes,
+                    winReductionMode
+                })
+            });
+            const data = await res.json();
+            if (!res.ok) return showLobbyBanner(data.error || 'Could not create offer', true);
+            showLobbyBanner(data.message);
+            updateLobbyStatus();
+        }
+
+        async function acceptLobbyOffer(offerId) {
+            if (!myLobbyName) {
+                return showLobbyBanner('Please register your Player Name first!', true);
+            }
+            const res = await fetch('/api/lobby/offers/accept', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ offerId, playerName: myLobbyName, browserId: getBrowserId() })
+            });
+            const data = await res.json();
+            if (!res.ok) return showLobbyBanner(data.error || 'Could not accept offer', true);
+            if (data.gameStarted && data.gameId) {
+                enterMatchmadeGame(data.gameId, myLobbyName);
+            } else {
+                showLobbyBanner(data.message);
+                updateLobbyStatus();
+            }
+        }
+
+        async function fillOfferWithCpu(offerId) {
+            const res = await fetch('/api/lobby/offers/fill-cpu', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ offerId })
+            });
+            const data = await res.json();
+            if (!res.ok) return showLobbyBanner(data.error || 'Failed to start with CPUs', true);
+            if (data.gameStarted && data.gameId) {
+                enterMatchmadeGame(data.gameId, myLobbyName);
+            }
+        }
+
+        async function cancelLobbyOffer(offerId) {
+            await fetch('/api/lobby/offers/cancel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ offerId })
+            });
+            updateLobbyStatus();
+        }
+
+        function enterMatchmadeGame(gameId, playerName) {
+            activeGameId = gameId;
+            openedMatchIds.add(gameId);
+            sessionStorage.setItem('ttt_opened_matches', JSON.stringify([...openedMatchIds]));
+            document.getElementById('quickPlayControls').style.display = 'none';
+            document.getElementById('seatControlBadge').style.display = 'none';
+            document.getElementById('activeMatchBadge').style.display = 'flex';
+            switchView('board');
+            fetchState().then(() => {
+                if (currentData) {
+                    const myBid = getBrowserId();
+                    let mySym = (currentData.activePlayers || []).find(
+                        (s) => currentData.playerBrowserIds && currentData.playerBrowserIds[s] === myBid
+                    );
+                    if (!mySym && playerName && currentData.playerNames) {
+                        mySym = (currentData.activePlayers || []).find(
+                            (s) => (currentData.playerNames[s] || '').toLowerCase() === playerName.toLowerCase()
+                        );
+                    }
+                    if (mySym) {
+                        localSeatControl = mySym;
+                        document.getElementById('localSeatSelect').value = mySym;
+                        const dispName = (currentData.playerNames && currentData.playerNames[mySym]) || playerName;
+                        document.getElementById('activeMatchText').innerText =
+                            `Match ${gameId.slice(0, 10)} — Locked to ${dispName} (${PLAYER_META[mySym].symbol})`;
+                    } else {
+                        localSeatControl = 'SPECTATOR';
+                        document.getElementById('localSeatSelect').value = 'SPECTATOR';
+                        document.getElementById('activeMatchText').innerText = `Spectating Match ${gameId.slice(0, 10)}`;
+                    }
+                    updateSideIndicators(currentData);
+                }
+            });
+        }
+
+        function leaveMatchmadeGame() {
+            activeGameId = 'default';
+            localSeatControl = 'ALL';
+            document.getElementById('localSeatSelect').value = 'ALL';
+            document.getElementById('quickPlayControls').style.display = 'flex';
+            document.getElementById('seatControlBadge').style.display = 'flex';
+            document.getElementById('activeMatchBadge').style.display = 'none';
+            fetchState();
+        }
+
+        async function startLobbyTournament() {
+            const mins = parseInt(document.getElementById('tournamentMinutesInput').value, 10) || 10;
+            const res = await fetch('/api/lobby/tournament/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ durationMinutes: mins })
+            });
+            const data = await res.json();
+            showLobbyBanner(data.message || 'Tournament started!');
+            updateLobbyStatus();
+        }
+
+        async function clearLobbyScores() {
+            await fetch('/api/lobby/tournament/clear-scores', { method: 'POST' });
+            showLobbyBanner('Scores cleared!');
+            updateLobbyStatus();
+        }
+
+        async function resetLobbyTournament() {
+            await fetch('/api/lobby/tournament/reset', { method: 'POST' });
+            showLobbyBanner('Lobby reset!');
+            updateLobbyStatus();
+        }
+
+        async function updateLobbyStatus() {
+            try {
+                const res = await fetch('/api/lobby/status');
+                const data = await res.json();
+
+                const badge = document.getElementById('lobbyCountBadge');
+                badge.innerText = (data.offers.length + data.games.length);
+
+                const lanBanner = document.getElementById('lanUrlBanner');
+                if (lanBanner && data.lanUrls && data.lanUrls.length > 0) {
+                    lanBanner.style.display = 'block';
+                    lanBanner.innerHTML = `🌐 <strong>Play across multiple computers on Wi-Fi / LAN:</strong> Open <code>${data.lanUrls.join('</code> or <code>')}</code> on other devices`;
+                }
+
+                // Auto-enter matchmade game if a new game involving `myLobbyName` just started
+                if (myLobbyName) {
+                    for (const g of data.games) {
+                        if (!g.winner && !g.draw && !openedMatchIds.has(g.gameId)) {
+                            const mySym = (g.activePlayers || []).find(
+                                (s) => (g.playerNames[s] || '').toLowerCase() === myLobbyName.toLowerCase()
+                            );
+                            if (mySym) {
+                                enterMatchmadeGame(g.gameId, myLobbyName);
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Render Players
+                const pList = document.getElementById('lobbyPlayersList');
+                if (data.players.length === 0) {
+                    pList.innerHTML = '<div style="color:#95a5a6; text-align:center; padding:12px;">No players registered yet</div>';
+                } else {
+                    pList.innerHTML = data.players.map((p) => {
+                        const isMe = myLobbyName && p.name.toLowerCase() === myLobbyName.toLowerCase();
+                        return `<div class="lobby-item ${isMe ? 'highlight-me' : ''}">
+                                    <span>${p.isComputer ? '🤖' : '👤'} <strong>${p.name}</strong> ${isMe ? '(You)' : ''}</span>
+                                    <span class="badge-pill" style="background:${p.busy ? '#e67e22' : '#27ae60'};">${p.busy ? '⚔️ In Game' : '🟢 Free'}</span>
+                                </div>`;
+                    }).join('');
+                }
+
+                // Render Open Offers
+                const oList = document.getElementById('lobbyOffersList');
+                if (data.offers.length === 0) {
+                    oList.innerHTML = '<div style="color:#95a5a6; text-align:center; padding:20px;">No open offers yet</div>';
+                } else {
+                    oList.innerHTML = data.offers.map((o) => {
+                        const syms = ALL_PLAYERS.slice(0, o.requiredPlayers).map((s) => PLAYER_META[s].symbol).join(', ');
+                        const joined = o.acceptedBy.join(', ');
+                        const alreadyIn = myLobbyName && o.acceptedBy.some((n) => n.toLowerCase() === myLobbyName.toLowerCase());
+                        return `<div class="lobby-item">
+                                    <div style="display:flex; flex-direction:column; gap:3px;">
+                                        <strong>${o.requiredPlayers}-Player (${syms}) • ${o.boardSize}x${o.boardSize} (Win ${o.handicap})</strong>
+                                        <span style="font-size:12px; color:#bdc3c7;">⏱️ ${o.timeControl}m | ⬛ ${o.blocks} | ✖ ${o.removes} | Joined (${o.acceptedBy.length}/${o.requiredPlayers}): ${joined}</span>
+                                    </div>
+                                    <div style="display:flex; gap:6px; align-items:center;">
+                                        ${!alreadyIn ? `<button class="lobby-btn" style="height:30px; padding:2px 10px; font-size:12px;" onclick="acceptLobbyOffer(${o.id})">Accept</button>` : `<span class="badge-pill">Joined</span>`}
+                                        <button class="lobby-btn secondary" style="height:30px; padding:2px 10px; font-size:12px;" onclick="fillOfferWithCpu(${o.id})" title="Fill remaining seats with CPU bots and start immediately">🤖 Fill w/ CPUs</button>
+                                        ${alreadyIn ? `<button class="lobby-btn danger" style="height:30px; padding:2px 8px; font-size:12px;" onclick="cancelLobbyOffer(${o.id})">✕</button>` : ''}
+                                    </div>
+                                </div>`;
+                    }).join('');
+                }
+
+                // Render Active Games
+                const gList = document.getElementById('lobbyGamesList');
+                if (data.games.length === 0) {
+                    gList.innerHTML = '<div style="color:#95a5a6; text-align:center; padding:20px;">No active lobby games</div>';
+                } else {
+                    gList.innerHTML = data.games.map((g) => {
+                        const roster = g.activePlayers.map((s) => `${PLAYER_META[s].symbol}: ${g.playerNames[s]}`).join(' vs ');
+                        const status = g.winner
+                            ? `🏆 ${g.playerNames[g.winner]} Won`
+                            : g.draw
+                            ? '🤝 Draw'
+                            : `Turn: ${PLAYER_META[g.currentPlayer].symbol} (${g.playerNames[g.currentPlayer]})`;
+                        return `<div class="lobby-item">
+                                    <div style="display:flex; flex-direction:column; gap:3px;">
+                                        <strong>${roster}</strong>
+                                        <span style="font-size:12px; color:#bdc3c7;">${g.boardSize}x${g.boardSize} • Move ${g.moveCount} • ${status}</span>
+                                    </div>
+                                    <button class="lobby-btn secondary" style="height:30px; padding:2px 10px; font-size:12px;" onclick="enterMatchmadeGame('${g.gameId}', myLobbyName)">Open Board →</button>
+                                </div>`;
+                    }).join('');
+                }
+
+                // Render Tournament & Leaderboard
+                const tBadge = document.getElementById('tournamentStatusBadge');
+                if (data.tournament && data.tournament.isRunning) {
+                    tBadge.innerText = `🟢 Running (${formatTime(data.tournament.remainingTime / 1000)})`;
+                    tBadge.style.background = '#27ae60';
+                } else {
+                    tBadge.innerText = 'Idle';
+                    tBadge.style.background = 'rgba(255,255,255,0.15)';
+                }
+
+                const lbList = document.getElementById('lobbyLeaderboardList');
+                if (data.players.length === 0) {
+                    lbList.innerHTML = '<div style="color:#95a5a6; text-align:center; padding:12px;">Register players and play matches to populate the leaderboard</div>';
+                } else {
+                    lbList.innerHTML = data.players.map((p, idx) => {
+                        const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+                        return `<div class="lobby-item">
+                                    <span><strong>${medal} ${p.name}</strong> ${p.isComputer ? '🤖' : '👤'} (ELO ${p.elo})</span>
+                                    <span><strong>${p.score} pts</strong> &nbsp;•&nbsp; ${p.wins}W - ${p.draws}D - ${p.losses}L</span>
+                                </div>`;
+                    }).join('');
+                }
+            } catch (e) {
+                console.error('Lobby poll error:', e);
+            }
+        }
+
+        // Poll board & lobby periodically so multi-tab / multi-player games stay live in sync
+        setInterval(() => {
+            if (!isViewingHistory && !isComputerThinking) {
+                fetchState();
+            }
+            updateLobbyStatus();
+        }, 800);
+
+        // Initialize UI
+        if (myLobbyName) {
+            document.getElementById('myRegisteredNameDisplay').innerText = myLobbyName;
+            fetch('/api/lobby/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: myLobbyName, isComputer: false, browserId: getBrowserId() })
+            }).catch(() => {});
+        }
+        document.getElementById('aiToggleBtn').innerText = "ON";
+        document.getElementById('aiToggleBtn').style.backgroundColor = "#27ae60";
+        document.getElementById('removeBlocksToggleBtn').innerText = "ON";
+        document.getElementById('removeBlocksToggleBtn').style.backgroundColor = "#27ae60";
+        renderDynamicSettingsInputs(2);
+        ensurePlayerPanelsRendered(['X', 'O']);
+        if (activeGameId !== 'default') {
+            enterMatchmadeGame(activeGameId, myLobbyName);
+        } else {
+            fetchState();
+        }
+        updateLobbyStatus();
+    </script>
+</body>
+</html>

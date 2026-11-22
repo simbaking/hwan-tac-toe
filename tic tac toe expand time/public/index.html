@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tic Tac Toe</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            margin-top: 50px;
+        }
+        h1 { margin-bottom: 10px; }
+        .info {
+            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            min-height: 30px;
+        }
+        .timers {
+            display: flex; gap: 40px; font-size: 20px; font-weight: bold; margin-bottom: 20px;
+            background: #34495e; padding: 10px 20px; border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .board {
+            display: grid;
+            gap: 10px;
+            background: #34495e;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            width: 400px;
+            height: 400px;
+            box-sizing: border-box;
+        }
+        .cell {
+            background: #ecf0f1;
+            color: #2c3e50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 5px;
+            user-select: none;
+            transition: background 0.2s;
+            min-width: 0;
+            min-height: 0;
+            overflow: hidden;
+            line-height: 1;
+        }
+        .cell:hover {
+            background: #bdc3c7;
+        }
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 900px;
+        }
+        button, select, input[type=number] {
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background 0.2s;
+            height: 50px;
+            box-sizing: border-box;
+        }
+        button:hover, select:hover {
+            background-color: #c0392b;
+        }
+        .toggle-btn {
+            background-color: #7f8c8d;
+        }
+        .toggle-btn:hover {
+            background-color: #95a5a6;
+        }
+        .settings-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #34495e;
+            padding: 10px;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        .settings-box label {
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .flex-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        select, input[type=number] {
+            background-color: #2c3e50;
+            border: 2px solid #34495e;
+            padding: 0 10px;
+        }
+        input[type=number] {
+            width: 60px;
+        }
+        .board.remove-mode .cell.removable { cursor: crosshair; }
+        .board.remove-mode .cell.removable:hover { background: #f5b7b1; }
+        .board.remove-mode .cell:not(.removable) { cursor: not-allowed; }
+        .history-btn {
+            background: transparent;
+            border: 1px solid #9ca3af;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            height: auto;
+            transition: all 0.2s;
+        }
+        .history-btn:hover:not(:disabled) {
+            background: rgba(255,255,255,0.1);
+            border-color: white;
+        }
+        .history-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tic Tac Toe</h1>
+    <div class="timers">
+        <div id="timerXContainer" style="color: #e74c3c">Player X: <span id="timerX">05:00</span></div>
+        <div id="timerOContainer" style="color: #3498db">Player O: <span id="timerO">05:00</span></div>
+    </div>
+    <div class="time-travel-controls" id="timeTravelControls" style="display:flex; align-items:center; gap: 0.5rem; background: #34495e; padding: 8px 16px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+        <button id="prevMoveBtn" class="history-btn" onclick="prevMove()">&larr;</button>
+        <span id="moveIndicator" style="color: #bdc3c7; font-size: 16px; font-weight: bold; min-width: 80px; text-align: center;">Live</span>
+        <button id="nextMoveBtn" class="history-btn" onclick="nextMove()">&rarr;</button>
+        <button id="liveMoveBtn" class="history-btn" onclick="goLive()" style="display:none; background: #e74c3c; border: none; font-weight: bold;">Go Live</button>
+    </div>
+    <div class="info" id="info">Loading...</div>
+    <div class="board" id="board">
+        <!-- Cells generated by JS -->
+    </div>
+    <div class="controls">
+        <div class="settings-box">
+            <label for="boardSize">Board Size:</label>
+            <select id="boardSize" onchange="changeSize()">
+                <option value="1">1x1</option>
+                <option value="2">2x2</option>
+                <option value="3">3x3</option>
+                <option value="4">4x4</option>
+                <option value="5" selected>5x5</option>
+                <option value="6">6x6</option>
+                <option value="7">7x7</option>
+            </select>
+        </div>
+        
+        <div class="settings-box">
+            <label>Win Amount</label>
+            <div class="flex-row">
+                <label for="xHandicap" style="color: #e74c3c">X:</label>
+                <input type="number" id="xHandicap" value="4" min="1" max="5" onchange="changeSize()">
+                <label for="oHandicap" style="color: #3498db">O:</label>
+                <input type="number" id="oHandicap" value="4" min="1" max="5" onchange="changeSize()">
+            </div>
+        </div>
+
+        <div class="settings-box">
+            <label for="timeControl">Time Control:</label>
+            <select id="timeControl" onchange="changeSize()">
+                <!-- 1 to 15 minutes, filled in by JS -->
+            </select>
+        </div>
+
+        <div class="settings-box">
+            <label>AI Mode</label>
+            <button id="aiToggleBtn" class="toggle-btn" onclick="toggleAI()">ON</button>
+        </div>
+        
+        <div class="settings-box">
+            <label>Blocks (Max 3)</label>
+            <div class="flex-row">
+                <label for="xBlocks" style="color: #e74c3c">X:</label>
+                <input type="number" id="xBlocks" value="0" min="0" max="3" onchange="changeSize()">
+                <label for="oBlocks" style="color: #3498db">O:</label>
+                <input type="number" id="oBlocks" value="0" min="0" max="3" onchange="changeSize()">
+            </div>
+        </div>
+
+        <div class="settings-box">
+            <label>Removes (Max 3)</label>
+            <div class="flex-row">
+                <label for="xRemoves" style="color: #e74c3c">X:</label>
+                <input type="number" id="xRemoves" value="0" min="0" max="3" onchange="changeSize()">
+                <label for="oRemoves" style="color: #3498db">O:</label>
+                <input type="number" id="oRemoves" value="0" min="0" max="3" onchange="changeSize()">
+            </div>
+        </div>
+
+        <div class="settings-box">
+            <label>Remove Blocks</label>
+            <button id="removeBlocksToggleBtn" class="toggle-btn" onclick="toggleRemoveBlocks()">ON</button>
+        </div>
+
+        <div class="settings-box" id="blockModeBox" style="display: none;">
+            <label>Use Block Mode</label>
+            <button id="blockToggleBtn" class="toggle-btn" onclick="toggleBlockMode()">OFF</button>
+        </div>
+
+        <div class="settings-box" id="removeModeBox" style="display: none;">
+            <label>Use Remove Mode</label>
+            <button id="removeToggleBtn" class="toggle-btn" onclick="toggleRemoveMode()">OFF</button>
+        </div>
+        
+        <div class="settings-box">
+            <label>&nbsp;</label>
+            <button onclick="resetGame()">Restart Game</button>
+        </div>
+    </div>
+
+    <script>
+        const boardEl = document.getElementById('board');
+        const infoEl = document.getElementById('info');
+        let aiEnabled = true;
+        let allowRemoveBlocks = true;
+        let blockModeEnabled = false;
+        let removeModeEnabled = false;
+        let currentData = null;
+        let isComputerThinking = false;
+        let gameHistory = [];
+        let isViewingHistory = false;
+        let historyIndex = 0;
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') prevMove();
+            if (e.key === 'ArrowRight') nextMove();
+        });
+        
+        let initialTime = 300;
+        let playerXTime = 300;
+        let playerOTime = 300;
+        let lastTick = 0;
+        let timerInterval = null;
+        let isPondering = false;
+
+        // Fill the time control dropdown: 1 to 15 minutes in 1 minute steps (default 5).
+        (function () {
+            const sel = document.getElementById('timeControl');
+            for (let m = 1; m <= 15; m++) {
+                const opt = document.createElement('option');
+                opt.value = m * 60;
+                opt.innerText = m === 1 ? '1 min' : `${m} mins`;
+                if (m === 5) opt.selected = true;
+                sel.appendChild(opt);
+            }
+        })();
+
+        // Boards bigger than 5x5 have more than 32 squares, so the AI worker has to run in
+        // BigInt ("big") mode. A fresh worker is started whenever that mode changes.
+        let worker = null;
+        let workerBig = null;
+
+        function ensureWorker(size) {
+            const big = size > 5;
+            if (worker && workerBig === big) return;
+            if (worker) worker.terminate();
+            workerBig = big;
+            isPondering = false;
+            worker = new Worker('ai-worker.js?v=' + Date.now() + (big ? '&big=1' : ''));
+            worker.onmessage = onWorkerMessage;
+        }
+
+        async function onWorkerMessage(e) {
+            let msg = e.data;
+            if (msg.type === 'MOVE') {
+                isComputerThinking = false;
+                if (msg.move !== -1) {
+                    if (msg.action === 'block') {
+                        await fetch(`/api/block?pos=${msg.move}`);
+                    } else if (msg.action === 'remove') {
+                        await fetch(`/api/remove?pos=${msg.move}`);
+                    } else {
+                        await fetch(`/api/move?pos=${msg.move}`);
+                    }
+                }
+                fetchState();
+            }
+        }
+
+        function startTimer() {
+            if (!timerInterval) {
+                lastTick = performance.now();
+                timerInterval = requestAnimationFrame(tickTimer);
+            }
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                cancelAnimationFrame(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function tickTimer() {
+            if (!currentData || currentData.winner || currentData.draw) {
+                stopTimer();
+                return;
+            }
+            let now = performance.now();
+            let dt = (now - lastTick) / 1000;
+            lastTick = now;
+            
+            if (currentData.currentPlayer === 'X') {
+                playerXTime -= dt;
+                if (playerXTime <= 0) { playerXTime = 0; handleTimeout('X'); }
+            } else {
+                playerOTime -= dt;
+                if (playerOTime <= 0) { playerOTime = 0; handleTimeout('O'); }
+            }
+            updateTimerUI();
+            
+            if (playerXTime > 0 && playerOTime > 0) {
+                timerInterval = requestAnimationFrame(tickTimer);
+            } else {
+                stopTimer();
+            }
+        }
+
+        function formatTime(t) {
+            let m = Math.floor(t / 60);
+            let s = Math.floor(t % 60);
+            return m + ":" + (s < 10 ? "0" : "") + s;
+        }
+
+        function updateTimerUI() {
+            document.getElementById('timerX').innerText = formatTime(playerXTime);
+            document.getElementById('timerO').innerText = formatTime(playerOTime);
+        }
+
+        async function handleTimeout(player) {
+            stopPondering();
+            await fetch(`/api/timeout?player=${player}`);
+            fetchState();
+        }
+
+        function toggleBlockMode() {
+            blockModeEnabled = !blockModeEnabled;
+            if (blockModeEnabled && removeModeEnabled) toggleRemoveMode();
+            const btn = document.getElementById('blockToggleBtn');
+            btn.innerText = blockModeEnabled ? "ON" : "OFF";
+            btn.style.backgroundColor = blockModeEnabled ? "#f39c12" : "#7f8c8d";
+        }
+
+        function toggleRemoveMode() {
+            removeModeEnabled = !removeModeEnabled;
+            if (removeModeEnabled && blockModeEnabled) toggleBlockMode();
+            const btn = document.getElementById('removeToggleBtn');
+            btn.innerText = removeModeEnabled ? "ON" : "OFF";
+            btn.style.backgroundColor = removeModeEnabled ? "#8e44ad" : "#7f8c8d";
+            boardEl.classList.toggle('remove-mode', removeModeEnabled);
+        }
+
+        async function toggleRemoveBlocks() {
+            allowRemoveBlocks = !allowRemoveBlocks;
+            const btn = document.getElementById('removeBlocksToggleBtn');
+            btn.innerText = allowRemoveBlocks ? "ON" : "OFF";
+            btn.style.backgroundColor = allowRemoveBlocks ? "#27ae60" : "#7f8c8d";
+            stopPondering();
+            if (worker) worker.postMessage({ type: 'CLEAR_TT' });
+            await fetch(`/api/set-remove-blocks?allow=${allowRemoveBlocks ? 1 : 0}`);
+            fetchState();
+        }
+
+        function toggleAI() {
+            aiEnabled = !aiEnabled;
+            const btn = document.getElementById('aiToggleBtn');
+            btn.innerText = aiEnabled ? "ON" : "OFF";
+            btn.style.backgroundColor = aiEnabled ? "#27ae60" : "#7f8c8d";
+            
+            if (aiEnabled && currentData && currentData.currentPlayer === 'O' && !currentData.winner && !currentData.draw && !isComputerThinking) {
+                triggerAI();
+            }
+        }
+        
+        function stopPondering() {
+            if (isPondering) {
+                worker.postMessage({ type: 'STOP_PONDER' });
+                isPondering = false;
+            }
+        }
+
+        function triggerAI() {
+            stopPondering();
+            isComputerThinking = true;
+            // Let the AI search for up to a reasonable chunk of its remaining time
+            // E.g., if it has 5 minutes left, it could search for 1-2 seconds per move
+            // We'll give it a dynamic chunk or at least 1000ms.
+            let timeLimit = Math.max(500, Math.min(3000, playerOTime * 1000 * 0.05)); 
+            
+            worker.postMessage({
+                type: 'START_SEARCH',
+                board: currentData.board,
+                size: currentData.boardSize,
+                xhc: currentData.xHandicap,
+                ohc: currentData.oHandicap,
+                xbl: currentData.xBlocks,
+                obl: currentData.oBlocks,
+                xrm: currentData.xRemoves || 0,
+                orm: currentData.oRemoves || 0,
+                allowRemoveBlocks: allowRemoveBlocks,
+                timeLimit: timeLimit,
+                isO: true
+            });
+        }
+
+        function triggerPonder() {
+            if (aiEnabled && currentData.currentPlayer === 'X' && !currentData.winner && !currentData.draw) {
+                stopPondering();
+                isPondering = true;
+                worker.postMessage({
+                    type: 'START_PONDER',
+                    board: currentData.board,
+                    size: currentData.boardSize,
+                    xhc: currentData.xHandicap,
+                    ohc: currentData.oHandicap,
+                    xbl: currentData.xBlocks,
+                    obl: currentData.oBlocks,
+                    xrm: currentData.xRemoves || 0,
+                    orm: currentData.oRemoves || 0,
+                    allowRemoveBlocks: allowRemoveBlocks,
+                    isO: true
+                });
+            }
+        }
+
+        async function fetchState() {
+            try {
+                const res = await fetch('/api/state');
+                const data = await res.json();
+                updateUI(data);
+            } catch(e) {
+                console.error("Failed to fetch state:", e);
+            }
+        }
+
+        async function prevMove() {
+            if (isViewingHistory && gameHistory.length > 0) {
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    renderHistoryState(gameHistory[historyIndex]);
+                    updateTimeTravelUI(gameHistory[historyIndex]);
+                }
+            } else {
+                try {
+                    const res = await fetch('/api/history?t=' + Date.now());
+                    if (!res.ok) return;
+                    const history = await res.json();
+                    if (history && history.length > 0) {
+                        gameHistory = history;
+                        isViewingHistory = true;
+                        historyIndex = history.length - 1;
+                        if (historyIndex > 0) {
+                            historyIndex--;
+                        }
+                        renderHistoryState(gameHistory[historyIndex]);
+                        updateTimeTravelUI(gameHistory[historyIndex]);
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch history:", e);
+                }
+            }
+        }
+
+        function nextMove() {
+            if (!isViewingHistory || gameHistory.length === 0) return;
+            if (historyIndex < gameHistory.length - 1) {
+                historyIndex++;
+                renderHistoryState(gameHistory[historyIndex]);
+                updateTimeTravelUI(gameHistory[historyIndex]);
+            } else {
+                goLive();
+            }
+        }
+
+        function goLive() {
+            isViewingHistory = false;
+            fetchState();
+        }
+
+        function updateTimeTravelUI(state) {
+            const indicator = document.getElementById('moveIndicator');
+            const liveBtn = document.getElementById('liveMoveBtn');
+            const prevBtn = document.getElementById('prevMoveBtn');
+            const nextBtn = document.getElementById('nextMoveBtn');
+
+            if (isViewingHistory) {
+                indicator.innerText = `Move ${historyIndex + 1}/${gameHistory.length}`;
+                indicator.style.color = '#f59e0b';
+                liveBtn.style.display = 'inline-block';
+                prevBtn.disabled = (historyIndex <= 0);
+                nextBtn.disabled = false;
+            } else {
+                indicator.innerText = state && state.moveCount !== undefined ? `Live (M${state.moveCount})` : 'Live';
+                indicator.style.color = '#bdc3c7';
+                liveBtn.style.display = 'none';
+                prevBtn.disabled = false;
+                nextBtn.disabled = true;
+            }
+        }
+
+        function renderBoardCells(data, showRemovable) {
+            const size = data.boardSize || 5;
+            if (boardEl.children.length !== size * size) {
+                boardEl.innerHTML = '';
+                boardEl.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+                boardEl.style.gridTemplateRows = `repeat(${size}, 1fr)`;
+                
+                const gapSize = size > 3 ? 5 : 10;
+                boardEl.style.gap = `${gapSize}px`;
+                
+                const fontSize = size === 1 ? 120 :
+                                 size === 2 ? 80 :
+                                 size === 3 ? 64 :
+                                 size === 4 ? 48 :
+                                 size === 5 ? 36 :
+                                 size === 6 ? 30 : 26;
+
+                for(let i=0; i<size*size; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.style.fontSize = `${fontSize}px`;
+                    cell.onclick = () => userMove(i);
+                    boardEl.appendChild(cell);
+                }
+            }
+
+            const cells = boardEl.children;
+            for(let i=0; i<size*size; i++) {
+                cells[i].classList.toggle('removable', showRemovable && isRemovableCell(data.board[i]));
+                if (data.board[i] === 'B') {
+                    cells[i].innerText = '⬛';
+                    cells[i].style.color = '#7f8c8d';
+                } else {
+                    cells[i].innerText = data.board[i] || '';
+                    if(data.board[i] === 'X') {
+                        cells[i].style.color = '#e74c3c';
+                    } else if(data.board[i] === 'O') {
+                        cells[i].style.color = '#3498db';
+                    }
+                }
+            }
+        }
+
+        function renderHistoryState(data) {
+            document.getElementById('blockModeBox').style.display = 'none';
+            document.getElementById('removeModeBox').style.display = 'none';
+            renderBoardCells(data, false);
+            if (data.winner) {
+                infoEl.innerText = `Player ${data.winner} Wins! 🎉`;
+            } else if (data.draw) {
+                infoEl.innerText = `It's a Draw! 🤝`;
+            } else {
+                infoEl.innerText = `Player ${data.currentPlayer}'s Turn`;
+            }
+        }
+
+        function isRemovableCell(val) {
+            return !!val && (allowRemoveBlocks || val !== 'B');
+        }
+
+        function updateUI(data) {
+            currentData = data;
+            if (data.allowRemoveBlocks !== undefined) {
+                allowRemoveBlocks = !!data.allowRemoveBlocks;
+                const rbBtn = document.getElementById('removeBlocksToggleBtn');
+                rbBtn.innerText = allowRemoveBlocks ? "ON" : "OFF";
+                rbBtn.style.backgroundColor = allowRemoveBlocks ? "#27ae60" : "#7f8c8d";
+            }
+            const size = data.boardSize || 5;
+
+            if (!isViewingHistory) {
+                if (boardEl.children.length !== size * size) {
+                    document.getElementById('boardSize').value = size;
+                    document.getElementById('xHandicap').value = data.xHandicap;
+                    document.getElementById('oHandicap').value = data.oHandicap;
+                    document.getElementById('xBlocks').value = data.xBlocks !== undefined ? data.xBlocks : 0;
+                    document.getElementById('oBlocks').value = data.oBlocks !== undefined ? data.oBlocks : 0;
+                    document.getElementById('xRemoves').value = data.xRemoves !== undefined ? data.xRemoves : 0;
+                    document.getElementById('oRemoves').value = data.oRemoves !== undefined ? data.oRemoves : 0;
+                }
+
+                const humanTurn = !data.winner && !data.draw && !(aiEnabled && data.currentPlayer === 'O');
+
+                let blocksLeft = data.currentPlayer === 'X' ? data.xBlocks : data.oBlocks;
+                const blockModeBox = document.getElementById('blockModeBox');
+                if (blocksLeft > 0 && humanTurn) {
+                    blockModeBox.style.display = 'flex';
+                    let txt = blockModeEnabled ? "ON" : "OFF";
+                    document.getElementById('blockToggleBtn').innerText = txt + " (" + blocksLeft + " left)";
+                } else {
+                    blockModeBox.style.display = 'none';
+                    if (blockModeEnabled) toggleBlockMode();
+                }
+
+                const slice = data.board.slice(0, size * size);
+                const boardFull = slice.every(v => v);
+                const hasRemovable = slice.some(isRemovableCell);
+                let removesLeft = data.currentPlayer === 'X' ? (data.xRemoves || 0) : (data.oRemoves || 0);
+                const removeModeBox = document.getElementById('removeModeBox');
+                if (removesLeft > 0 && humanTurn) {
+                    removeModeBox.style.display = 'flex';
+                    // A full board leaves nothing else to do, so switch remove mode on automatically.
+                    if (boardFull && hasRemovable && !removeModeEnabled) toggleRemoveMode();
+                    if (!hasRemovable && removeModeEnabled) toggleRemoveMode();
+                    let txt = removeModeEnabled ? "ON" : "OFF";
+                    document.getElementById('removeToggleBtn').innerText = txt + " (" + removesLeft + " left)";
+                } else {
+                    removeModeBox.style.display = 'none';
+                    if (removeModeEnabled) toggleRemoveMode();
+                }
+
+                renderBoardCells(data, true);
+                updateTimeTravelUI(data);
+            }
+
+            if(data.winner) {
+                if (!isViewingHistory) infoEl.innerText = `Player ${data.winner} Wins! 🎉`;
+                isComputerThinking = false;
+                stopTimer();
+                stopPondering();
+            } else if(data.draw) {
+                if (!isViewingHistory) infoEl.innerText = `It's a Draw! 🤝`;
+                isComputerThinking = false;
+                stopTimer();
+                stopPondering();
+            } else {
+                if (!isViewingHistory) {
+                    infoEl.innerText = removeModeEnabled
+                        ? (allowRemoveBlocks
+                            ? `Player ${data.currentPlayer}: click a filled square to remove it`
+                            : `Player ${data.currentPlayer}: click an X or O square to remove it`)
+                        : `Player ${data.currentPlayer}'s Turn`;
+                }
+                startTimer();
+                
+                if (aiEnabled && data.currentPlayer === 'O' && !isComputerThinking) {
+                    triggerAI();
+                } else if (data.currentPlayer === 'X') {
+                    isComputerThinking = false;
+                    triggerPonder();
+                }
+            }
+        }
+
+        async function userMove(pos) {
+            if (isViewingHistory) return;
+            if (currentData && (currentData.winner || currentData.draw)) return;
+            if (aiEnabled && currentData && currentData.currentPlayer === 'O') return;
+
+            if (removeModeEnabled) {
+                // Remove: only removable squares (X, O, or a block when Remove Blocks is ON) can be emptied.
+                if (currentData && !isRemovableCell(currentData.board[pos])) return;
+                stopPondering();
+                await fetch(`/api/remove?pos=${pos}`);
+                // One remove per click; switch back to normal play afterwards.
+                if (removeModeEnabled) toggleRemoveMode();
+                fetchState();
+                return;
+            }
+
+            if (currentData && currentData.board[pos]) return;
+            
+            stopPondering();
+
+            if (blockModeEnabled) {
+                await fetch(`/api/block?pos=${pos}`);
+                let blocksLeft = currentData.currentPlayer === 'X' ? currentData.xBlocks : currentData.oBlocks;
+                if (blocksLeft <= 1) {
+                    if (blockModeEnabled) toggleBlockMode();
+                }
+                fetchState();
+            } else {
+                await makeMove(pos);
+            }
+        }
+
+        async function makeMove(pos) {
+            await fetch(`/api/move?pos=${pos}`);
+            fetchState();
+        }
+
+        async function changeSize() {
+            const size = document.getElementById('boardSize').value;
+            const sizeNum = parseInt(size, 10);
+            const xhcInput = document.getElementById('xHandicap');
+            const ohcInput = document.getElementById('oHandicap');
+            xhcInput.max = size;
+            ohcInput.max = size;
+            if (parseInt(xhcInput.value, 10) > sizeNum) xhcInput.value = size;
+            if (parseInt(ohcInput.value, 10) > sizeNum) ohcInput.value = size;
+            const xhc = xhcInput.value;
+            const ohc = ohcInput.value;
+            const xblocks = document.getElementById('xBlocks').value;
+            const oblocks = document.getElementById('oBlocks').value;
+            const xremoves = document.getElementById('xRemoves').value;
+            const oremoves = document.getElementById('oRemoves').value;
+            const timeCtrl = parseInt(document.getElementById('timeControl').value, 10);
+            isComputerThinking = false;
+            isViewingHistory = false;
+            gameHistory = [];
+            historyIndex = 0;
+            
+            stopTimer();
+            stopPondering();
+            if (removeModeEnabled) toggleRemoveMode();
+            if (blockModeEnabled) toggleBlockMode();
+            ensureWorker(parseInt(size, 10));
+            worker.postMessage({ type: 'CLEAR_TT' });
+            
+            initialTime = timeCtrl;
+            playerXTime = initialTime;
+            playerOTime = initialTime;
+            updateTimerUI();
+            
+            let starting = 'X';
+            if (aiEnabled && Math.random() < 0.5) {
+                starting = 'O';
+            }
+            try {
+                const res = await fetch(`/api/reset?size=${size}&starting=${starting}&xhc=${xhc}&ohc=${ohc}&xblocks=${xblocks}&oblocks=${oblocks}&xremoves=${xremoves}&oremoves=${oremoves}&removeblocks=${allowRemoveBlocks ? 1 : 0}`);
+                if (!res.ok) throw new Error("Server error");
+                await fetchState();
+            } catch (e) {
+                console.warn("Server not ready yet, retrying in 500ms...", e);
+                setTimeout(changeSize, 500);
+            }
+        }
+
+        async function resetGame() {
+            changeSize();
+        }
+
+        // Initialize AI and Remove Blocks toggles to ON visually
+        document.getElementById('aiToggleBtn').innerText = "ON";
+        document.getElementById('aiToggleBtn').style.backgroundColor = "#27ae60";
+        document.getElementById('removeBlocksToggleBtn').innerText = "ON";
+        document.getElementById('removeBlocksToggleBtn').style.backgroundColor = "#27ae60";
+        changeSize(); // initial load with settings
+    </script>
+</body>
+</html>
